@@ -2,6 +2,7 @@
 *.pot
 *.pyc
 .idea
+.tox
 __pycache__/
 local_settings.py
 db.sqlite3
