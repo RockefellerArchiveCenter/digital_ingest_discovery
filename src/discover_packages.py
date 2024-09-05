@@ -12,7 +12,7 @@ import requests
 from .helpers import get_client_with_role, validate_bag_data
 
 
-class BagDiscoverer(object):
+class PackageDiscoverer(object):
 
     def __init__(self,
                  package_id,
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     storage_dir = os.environ.get('STORAGE_DIR')
     tmp_dir = os.environ.get('TMP_DIR')
 
-    BagDiscoverer(
+    PackageDiscoverer(
         package_id,
         digitization_path,
         digitization_path,
