@@ -9,7 +9,7 @@ from shutil import copy, copyfileobj
 import rac_schema_validator
 import requests
 
-from .helpers import get_client_with_role, validate_bag_data
+from .helpers import get_client_with_role, validate_package_data
 
 
 class PackageDiscoverer(object):
@@ -81,10 +81,10 @@ class PackageDiscoverer(object):
             json_file = outer_tar.extractfile(f"{self.package_id}/{self.package_id}.json")
             package_data = json.load(json_file)
             try:
-                validate_bag_data(package_data, f"{package_data.get('origin', 'aurora')}_bag.json")
+                validate_package_data(package_data, f"{package_data.get('origin', 'aurora')}_bag.json")
             except rac_schema_validator.exceptions.ValidationError as e:
                 raise Exception(
-                    f"Invalid bag data: {e} \n{package_data}")
+                    f"Invalid package data: {e} \n{package_data}")
 
             # Extract and save nested package binary as .tar.gz
             inner_tar_data = outer_tar.extractfile(f"{self.package_id}/{self.package_id}.tar.gz")
