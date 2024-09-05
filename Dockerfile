@@ -1,11 +1,13 @@
-FROM python:3.10
-
-ENV PYTHONUNBUFFERED 1
-
-RUN mkdir /code
+FROM python:3.11-slim-buster as base
 WORKDIR /code
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY src src
 
-ADD requirements.txt /code/
-RUN pip install --upgrade pip && pip install -r requirements.txt
+FROM base as test
+COPY test_requirements.txt .coveragerc ./
+RUN pip install -r test_requirements.txt
+COPY tests tests
 
-ADD . /code/
+FROM base as build
+CMD [ "python", "src/discover_packages.py" ]
