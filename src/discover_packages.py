@@ -11,6 +11,10 @@ import requests
 
 from .helpers import get_client_with_role, validate_package_data
 
+logging.basicConfig(
+    level=int(os.environ.get('LOGGING_LEVEL', logging.INFO)),
+    format='%(filename)s::%(funcName)s::%(lineno)s %(message)s')
+
 
 class PackageDiscoverer(object):
 
