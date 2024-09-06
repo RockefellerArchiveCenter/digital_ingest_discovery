@@ -6,7 +6,7 @@ import rac_schema_validator
 from aws_assume_role_lib import assume_role
 
 
-def get_client_with_role(self, resource, role_arn):
+def get_client_with_role(resource, role_arn):
     """Gets Boto3 client which authenticates with a specific IAM role."""
     session = boto3.Session()
     assumed_role_session = assume_role(session, role_arn)
