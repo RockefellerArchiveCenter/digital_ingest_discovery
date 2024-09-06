@@ -3,6 +3,7 @@ WORKDIR /code
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY src src
+COPY rac_schemas/schemas rac_schemas/schemas
 
 FROM base as test
 COPY test_requirements.txt .coveragerc ./
