@@ -39,7 +39,8 @@ class PackageDiscoverer(object):
         logging.debug(
             f'Discovery started for package {self.package_id}.')
         try:
-            downloaded_path = self.download()
+            downloaded_path = Path(self.tmp_dir, f"{self.package_id}.tar.gz")
+            self.download(downloaded_path)
             package_path, package_data = self.unpack(downloaded_path)
             if package_data.get('origin') == 'digitization':
                 self.deliver_to_digitization(package_path, package_data)
@@ -49,21 +50,21 @@ class PackageDiscoverer(object):
                 f'Package {self.package_id} successfully discovered.')
         except Exception as e:
             logging.exception(e)
-            self.cleanup_failed_job(downloaded_path, package_path)
+            self.cleanup_failed_job(downloaded_path)
             self.deliver_failure_notification(e)
 
-    def download(self):
+    def download(self, download_path):
         """Downloads package from S3 bucket.
 
         Returns:
             package_path (pathlib.Path): path to package binary
         """
-        download_path = Path(self.tmp_dir, f"{self.package_id}.tar.gz")
         s3_client = get_client_with_role('s3', self.role_arn)
         s3_client.download_file(
             self.source_bucket,
             f"{self.package_id}.tar.gz",
             download_path)
+        logging.debug(f'Package downloaded to {download_path}.')
         return download_path
 
     def unpack(self, downloaded_path):
@@ -92,6 +93,7 @@ class PackageDiscoverer(object):
             with open(storage_path, "wb") as package_binary:
                 copyfileobj(inner_tar_data, package_binary)
 
+        logging.debug(f'Package unpacked to {self.storage_dir}.')
         return storage_path, package_data
 
     def deliver_to_digitization(self, package_path, package_data):
@@ -116,6 +118,8 @@ class PackageDiscoverer(object):
                 headers={"Content-Type": "application/json"},
             )
             r.raise_for_status()
+            logging.debug(
+                f'Package delivereed to digitization services at location {derivative_path} and URL {self.digitization_url}.')
         except requests.exceptions.HTTPError as e:
             if r.text:
                 raise Exception(r.text)
@@ -131,7 +135,7 @@ class PackageDiscoverer(object):
         downloaded_path.unlink(missing_ok=True)
         logging.debug('Cleanup from successful job completed.')
 
-    def cleanup_failed_job(self, downloaded_path, package_path):
+    def cleanup_failed_job(self, downloaded_path):
         """Remove all files created during processing.
 
         Args:
@@ -153,7 +157,7 @@ class PackageDiscoverer(object):
         package_data['package_path'] = package_path
         client.publish(
             TopicArn=self.sns_topic,
-            Message=f'Package {self.refid} successfully packaged.',
+            Message=f'Package {self.package_id} successfully discovered.',
             MessageAttributes={
                 'package_id': {
                     'DataType': 'String',
@@ -169,7 +173,7 @@ class PackageDiscoverer(object):
                 },
                 'package_data': {
                     'DataType': 'String',
-                    'StringValue': package_data,
+                    'StringValue': json.dumps(package_data),
                 },
             })
         logging.debug('Success notification delivered.')
@@ -186,9 +190,9 @@ class PackageDiscoverer(object):
         tb = ''.join(traceback.format_exception(exception)[:-1])
         client.publish(
             TopicArn=self.sns_topic,
-            Message=f'Package {self.refid} failed packaging.',
+            Message=f'Package {self.package_id} failed during discovery.',
             MessageAttributes={
-                'refid': {
+                'package_id': {
                     'DataType': 'String',
                     'StringValue': self.package_id,
                 },
