@@ -12,16 +12,6 @@ jobs:
     environment:
       name: development
 
-    env:
-      APPLICATION_NAME: ursa_major
-      CONTAINER: ursa-major-web
-      APPLICATION_PORT: 8005
-
-    services:
-      docker:
-        image: docker:stable
-        options: --privileged
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,7 +21,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Cache dependencies
         uses: actions/cache@v3
@@ -39,30 +29,11 @@ jobs:
           path: |
             $HOME/.cache/pip
             $HOME/.cache/pre-commit
+            $HOME/.cache/tox
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*.lock') }}
 
-      - name: Copy config file
-        run: cp ${{ env.APPLICATION_NAME }}/config.py.example ${{ env.APPLICATION_NAME }}/config.py
+      - name: Install tox
+        run: pip install tox
 
-      - name: Login to Docker
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Start Docker containers
-        run: docker compose up -d
-
-      - name: Wait for services to be ready
-        run: ./wait-for-it.sh $CONTAINER:$APPLICATION_PORT -- docker compose exec -T $CONTAINER pip install coverage
-
-      - name: Install pre-commit
-        run: |
-          pip install "pre-commit===2.13.0"
-          pre-commit install
-
-      - name: Run pre-commit checks
-        run: pre-commit run --all-files --show-diff-on-failure
-
-      - name: Run tests with coverage
-        run: docker compose exec -T $CONTAINER coverage run manage.py test
-
-      - name: Generate coverage report
-        run: docker compose exec -T $CONTAINER coverage report --omit=*/migrations/* -m
+      - name: Run tests
+        run: tox
