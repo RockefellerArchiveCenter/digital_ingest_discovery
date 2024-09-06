@@ -15,9 +15,8 @@ def get_client_with_role(resource, role_arn):
 
 def validate_package_data(package_data, schema_name):
     """Validates package data against RAC schemas."""
-    base_file = open(Path('rac_schemas', 'schemas', 'base.json'), 'r')
-    base_schema = json.load(base_file)
-    base_file.close()
-    with open(Path('rac_schemas', 'schemas', schema_name), 'r') as object_file:
-        object_schema = json.load(object_file)
-        return rac_schema_validator.is_valid(package_data, object_schema, base_schema)
+    with open(Path('schemas', 'base.json'), 'r') as base_file:
+        base_schema = json.load(base_file)
+        with open(Path('schemas', schema_name), 'r') as object_file:
+            object_schema = json.load(object_file)
+            return rac_schema_validator.is_valid(package_data, object_schema, base_schema)
