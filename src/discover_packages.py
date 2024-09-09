@@ -38,6 +38,8 @@ class PackageDiscoverer(object):
         self.storage_dir = storage_dir
         self.ssm_parameter_path = ssm_parameter_path
         self.tmp_dir = tmp_dir
+        for fp in [self.digitization_path, self.storage_dir, self.tmp_dir]:
+            Path(fp).mkdir(exist_ok=True)
 
     def run(self):
         logging.debug(

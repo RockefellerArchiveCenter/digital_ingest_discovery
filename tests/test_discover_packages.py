@@ -158,7 +158,6 @@ def test_unpack():
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     tmp_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
     copy(fixture_path, tmp_path)
-    Path(discoverer.storage_dir).mkdir(exist_ok=True)
 
     package_path, package_data = discoverer.unpack(tmp_path)
 
@@ -179,8 +178,6 @@ def test_deliver_to_digitization(mock_post):
         "bags",
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     storage_path = Path(discoverer.storage_dir, f"{discoverer.package_id}.tar.gz")
-    for fp in [discoverer.storage_dir, discoverer.digitization_path]:
-        Path(fp).mkdir(exist_ok=True)
     copy(fixture_path, storage_path)
     package_data = {"origin": "digitization", "identifier": "f78742e5-6af9-4756-a94a-6cd297406d50"}
 
