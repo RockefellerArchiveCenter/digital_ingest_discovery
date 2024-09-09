@@ -50,14 +50,14 @@ jobs:
           role-duration-seconds: 900
           aws-region: ${{ secrets.AWS_REGION }}
 
-      if: ${{ github.ref_name == 'development' }}
       - name: Build docker image
+        if: ${{ github.ref_name == 'development' }}
         run: docker build -t ${{APPLICATION_NAME}} --target build .
 
-      if: ${{ github.ref_name == 'development' }}
       - name: Push Docker image to ECR
+        if: ${{ github.ref_name == 'development' }}
         run: bash deploy_scripts/containers/push_image_to_ecr.sh ${{APPLICATION_NAME}}
       
-      if: ${{ github.ref_name == 'base' }}
       - name: Retag Docker image
+        if: ${{ github.ref_name == 'base' }}
         run: bash deploy_scripts/containers/add_tag_to_image.sh ${{APPLICATION_NAME}} dev prod
