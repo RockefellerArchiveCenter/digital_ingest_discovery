@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import boto3
 import pytest
-from moto import mock_s3, mock_sns, mock_sqs, mock_sts
+from moto import mock_aws
 from moto.core import DEFAULT_ACCOUNT_ID
 
 from src.discover_packages import PackageDiscoverer
@@ -140,8 +140,7 @@ def test_run_exception(
     mock_start_notification.assert_called_once_with()
 
 
-@mock_s3
-@mock_sts
+@mock_aws
 @patch('src.discover_packages.get_client_with_role')
 def test_download(mock_role):
     discoverer = PackageDiscoverer(*ARGS)
@@ -230,9 +229,7 @@ def test_cleanup_failed_job():
     assert not tmp_path.is_dir()
 
 
-@mock_sns
-@mock_sqs
-@mock_sts
+@mock_aws
 @patch('src.discover_packages.get_client_with_role')
 def test_deliver_start_notification(mock_role):
     """Asserts success messages are delivered as expected."""
@@ -261,9 +258,7 @@ def test_deliver_start_notification(mock_role):
     assert message_body['MessageAttributes']['service']['Value'] == discoverer.service_name
 
 
-@mock_sns
-@mock_sqs
-@mock_sts
+@mock_aws
 @patch('src.discover_packages.get_client_with_role')
 def test_deliver_success_notification(mock_role):
     """Asserts success messages are delivered as expected."""
@@ -298,9 +293,7 @@ def test_deliver_success_notification(mock_role):
     assert json_data['package_path'] == package_path
 
 
-@mock_sns
-@mock_sqs
-@mock_sts
+@mock_aws
 @patch('src.discover_packages.get_client_with_role')
 @patch('traceback.format_exception')
 def test_deliver_failure_notification(mock_traceback, mock_role):
