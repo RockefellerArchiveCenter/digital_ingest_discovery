@@ -49,6 +49,7 @@ def test_init():
         PackageDiscoverer(*invalid_args)
 
 
+@patch('src.discover_packages.PackageDiscoverer.deliver_start_notification')
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
 @patch('src.discover_packages.PackageDiscoverer.deliver_to_digitization')
@@ -63,7 +64,8 @@ def test_run_born_digital(
         mock_success_cleanup,
         mock_deliver,
         mock_unpack,
-        mock_download):
+        mock_download,
+        mock_start_notification):
     """Ensures born digital packages trigger the correct methods and arguments."""
     discoverer = PackageDiscoverer(*ARGS)
     download_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
@@ -79,8 +81,10 @@ def test_run_born_digital(
     mock_deliver.assert_not_called()
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
+    mock_start_notification.assert_called_once_with()
 
 
+@patch('src.discover_packages.PackageDiscoverer.deliver_start_notification')
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
 @patch('src.discover_packages.PackageDiscoverer.deliver_to_digitization')
@@ -95,7 +99,8 @@ def test_run_digitized(
         mock_success_cleanup,
         mock_deliver,
         mock_unpack,
-        mock_download):
+        mock_download,
+        mock_start_notification):
     """Ensures digitized packages trigger the correct methods and arguments."""
     discoverer = PackageDiscoverer(*ARGS)
     download_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
@@ -112,15 +117,18 @@ def test_run_digitized(
     mock_deliver.assert_called_once_with(storage_path, package_data)
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
+    mock_start_notification.assert_called_once_with()
 
 
+@patch('src.discover_packages.PackageDiscoverer.deliver_start_notification')
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
 def test_run_exception(
         mock_failure_notification,
         mock_failed_cleanup,
-        mock_download):
+        mock_download,
+        mock_start_notification):
     """Ensures exceptions are handled correctly."""
     discoverer = PackageDiscoverer(*ARGS)
     exception = Exception("Invalid refid.")
@@ -129,6 +137,7 @@ def test_run_exception(
     discoverer.run()
     mock_failure_notification.assert_called_once_with(exception)
     mock_failed_cleanup.assert_called_once_with(download_path)
+    mock_start_notification.assert_called_once_with()
 
 
 @mock_s3
@@ -219,6 +228,37 @@ def test_cleanup_failed_job():
     copy(fixture_path, tmp_path)
     discoverer.cleanup_failed_job(tmp_path)
     assert not tmp_path.is_dir()
+
+
+@mock_sns
+@mock_sqs
+@mock_sts
+@patch('src.discover_packages.get_client_with_role')
+def test_deliver_start_notification(mock_role):
+    """Asserts success messages are delivered as expected."""
+    sns = boto3.client('sns', region_name='us-east-1')
+    mock_role.return_value = sns
+    topic_arn = sns.create_topic(Name='my-topic')['TopicArn']
+    sqs_conn = boto3.resource("sqs", region_name="us-east-1")
+    sqs_conn.create_queue(QueueName="test-queue")
+    sns.subscribe(
+        TopicArn=topic_arn,
+        Protocol="sqs",
+        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:test-queue",
+    )
+
+    default_args = ARGS
+    default_args[4] = topic_arn
+    discoverer = PackageDiscoverer(*default_args)
+
+    discoverer.deliver_start_notification()
+
+    queue = sqs_conn.get_queue_by_name(QueueName="test-queue")
+    messages = queue.receive_messages(MaxNumberOfMessages=1)
+    message_body = json.loads(messages[0].body)
+    assert message_body['MessageAttributes']['outcome']['Value'] == 'STARTED'
+    assert message_body['MessageAttributes']['package_id']['Value'] == discoverer.package_id
+    assert message_body['MessageAttributes']['service']['Value'] == discoverer.service_name
 
 
 @mock_sns
