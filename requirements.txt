@@ -10,17 +10,17 @@ attrs==24.2.0
     #   referencing
 aws-assume-role-lib==2.10.0
     # via -r requirements.in
-boto3==1.35.13
+boto3==1.35.76
     # via aws-assume-role-lib
-botocore==1.35.13
+botocore==1.35.76
     # via
     #   boto3
     #   s3transfer
 certifi==2024.8.30
     # via requests
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via requests
-idna==3.8
+idna==3.10
     # via requests
 jmespath==1.0.1
     # via
@@ -28,11 +28,11 @@ jmespath==1.0.1
     #   botocore
 jsonschema==4.23.0
     # via rac-schema-validator
-jsonschema-specifications==2023.12.1
+jsonschema-specifications==2024.10.1
     # via jsonschema
 python-dateutil==2.9.0.post0
     # via botocore
-rac-schema-validator==0.1
+rac-schema-validator==1.0
     # via -r requirements.in
 referencing==0.35.1
     # via
@@ -40,15 +40,15 @@ referencing==0.35.1
     #   jsonschema-specifications
 requests==2.32.3
     # via -r requirements.in
-rpds-py==0.20.0
+rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.10.2
+s3transfer==0.10.4
     # via boto3
-six==1.16.0
+six==1.17.0
     # via python-dateutil
-urllib3==2.2.2
+urllib3==2.2.3
     # via
     #   botocore
     #   requests
