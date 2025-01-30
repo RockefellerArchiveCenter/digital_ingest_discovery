@@ -15,8 +15,6 @@ jobs:
 
     env:
       APPLICATION_NAME: ursa_major
-      CONTAINER: ursa-major-web
-      APPLICATION_PORT: 8005
 
     services:
       docker:
