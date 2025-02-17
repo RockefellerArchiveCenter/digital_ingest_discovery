@@ -158,6 +158,7 @@ def test_download(mock_role):
 
 
 def test_unpack():
+    """Tests unpacking for both aurora and digitization package."""
     discoverer = PackageDiscoverer(*ARGS)
     for identifier in ["f78742e5-6af9-4756-a94a-6cd297406d50", "f78742e5-6af9-4756-a94a-6cd297406d51"]:
         discoverer.package_id = identifier
