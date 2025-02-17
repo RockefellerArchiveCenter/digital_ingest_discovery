@@ -18,7 +18,6 @@ ARGS = [
     'topic',  # sns_topic
     'digital-ingest-upload',  # source_bucket
     '/storage',  # storage_dir
-    '/dev/ursa_major',  # ssm_parameter_path
     '/tmp',  # tmp_dir
 ]
 
@@ -33,16 +32,16 @@ def test_init():
     assert discoverer.sns_topic == 'topic'
     assert discoverer.source_bucket == 'digital-ingest-upload'
     assert discoverer.storage_dir == '/storage'
-    assert discoverer.ssm_parameter_path == '/dev/ursa_major'
     assert discoverer.tmp_dir == '/tmp'
 
     invalid_args = [
         'f78742e5-6af9-4756-a94a-6cd297406d50',
-        '/digit tmp_dirization',
+        '/digit tmp_digitization',
         'https://zorya.rockarch.org/package',
         'ursa-major-dev-role-arn',
         'topic',
         'digital-ingest-upload',
+        'ssm_path',
         '/storage',
         '/dev/ursa_major']
     with pytest.raises(Exception):

@@ -26,7 +26,6 @@ class PackageDiscoverer(object):
                  sns_topic,
                  source_bucket,
                  storage_dir,
-                 ssm_parameter_path,
                  tmp_dir):
         self.package_id = package_id
         self.digitization_path = digitization_path
@@ -36,7 +35,6 @@ class PackageDiscoverer(object):
         self.sns_topic = sns_topic
         self.source_bucket = source_bucket
         self.storage_dir = storage_dir
-        self.ssm_parameter_path = ssm_parameter_path
         self.tmp_dir = tmp_dir
         for fp in [self.digitization_path, self.storage_dir, self.tmp_dir]:
             Path(fp).mkdir(exist_ok=True)
@@ -257,7 +255,6 @@ if __name__ == '__main__':
     role_arn = os.environ.get('AWS_ROLE_ARN')
     sns_topic = os.environ.get('AWS_SNS_TOPIC')
     source_bucket = os.environ.get('AWS_SOURCE_BUCKET')
-    ssm_parameter_path = f"/{os.environ.get('ENV')}/{os.environ.get('APP_CONFIG_PATH')}"
     storage_dir = os.environ.get('STORAGE_DIR')
     tmp_dir = os.environ.get('TMP_DIR')
 
@@ -268,7 +265,6 @@ if __name__ == '__main__':
         role_arn,
         sns_topic,
         source_bucket,
-        ssm_parameter_path,
         storage_dir,
         tmp_dir
     ).run()
