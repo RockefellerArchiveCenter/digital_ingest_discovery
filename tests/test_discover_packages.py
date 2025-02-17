@@ -159,21 +159,23 @@ def test_download(mock_role):
 
 def test_unpack():
     discoverer = PackageDiscoverer(*ARGS)
-    fixture_path = Path(
-        "tests",
-        "fixtures",
-        "bags",
-        "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
-    tmp_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
-    copy(fixture_path, tmp_path)
+    for identifier in ["f78742e5-6af9-4756-a94a-6cd297406d50", "f78742e5-6af9-4756-a94a-6cd297406d51"]:
+        discoverer.package_id = identifier
+        fixture_path = Path(
+            "tests",
+            "fixtures",
+            "bags",
+            f"{identifier}.tar.gz")
+        tmp_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
+        copy(fixture_path, tmp_path)
 
-    package_path, package_data = discoverer.unpack(tmp_path)
+        package_path, package_data = discoverer.unpack(tmp_path)
 
-    assert package_path == Path(discoverer.storage_dir, f"{discoverer.package_id}.tar.gz")
-    assert package_path.is_file()
-    with open(Path("tests", "fixtures", "json", "f78742e5-6af9-4756-a94a-6cd297406d50.json"), "r") as df:
-        expected_data = json.load(df)
-        assert package_data == expected_data
+        assert package_path == Path(discoverer.storage_dir, f"{discoverer.package_id}.tar.gz")
+        assert package_path.is_file()
+        with open(Path("tests", "fixtures", "json", f"{identifier}.json"), "r") as df:
+            expected_data = json.load(df)
+            assert package_data == expected_data
 
 
 @patch('requests.post')

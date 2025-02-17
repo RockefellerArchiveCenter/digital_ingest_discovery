@@ -1,0 +1,144 @@
+{
+    "url": "https://aurora.rockarch.org/api/transfers/19/",
+    "identifier": "f78742e5-6af9-4756-a94a-6cd297406d51",
+    "organization": "https://aurora.rockarch.org/api/orgs/5/",
+    "origin": "aurora",
+    "bag_it_name": "RAC4815",
+    "process_status": 90,
+    "file_size": "131216279",
+    "file_type": "OTHER",
+    "appraisal_note": "",
+    "additional_error_info": null,
+    "metadata": {
+        "source_organization": "Ford Foundation",
+        "title": "Organizational Charts",
+        "record_creators": [
+            {
+                "name": "Ford Foundation",
+                "type": "organization"
+            }
+        ],
+        "internal_sender_description": "Organizational History: Organizational Charts and Spreadsheets 1948-2007",
+        "date_start": "1948-01-01",
+        "date_end": "2007-12-31",
+        "record_type": "organizational history",
+        "language": [
+            "eng"
+        ],
+        "bag_count": "",
+        "bag_group_identifier": "",
+        "payload_oxum": "131137170.164",
+        "bagit_profile_identifier": "http://aurora.rockarch.org/api/bagit_profiles/5.json",
+        "bagging_date": "2019-08-27T03:48:52.943372-04:00",
+        "origin": "aurora"
+    },
+    "rights_statements": [
+        {
+            "rights_basis": "copyright",
+            "determination_date": "2019-05-16",
+            "jurisdiction": "us",
+            "start_date": "1947-12-31",
+            "end_date": "2127-12-30",
+            "basis_note": "The donor retains copyright. The term of copyright for unpublished works is 120 years after date of creation.",
+            "copyright_status": "copyrighted",
+            "terms": null,
+            "statute_citation": null,
+            "other_basis": null,
+            "rights_granted": []
+        },
+        {
+            "rights_basis": "other",
+            "determination_date": null,
+            "jurisdiction": null,
+            "start_date": "2019-02-27",
+            "end_date": "2007-12-30",
+            "basis_note": "These files are open for research 10 years + archival review. Must undergo archival processing in order to become eligible for researcher access and use only in a supervised reading room setting.",
+            "copyright_status": null,
+            "terms": null,
+            "statute_citation": null,
+            "other_basis": "donor",
+            "rights_granted": [
+                {
+                    "act": "publish",
+                    "start_date": "1947-12-31",
+                    "end_date": "2007-12-30",
+                    "granted_note": "",
+                    "grant_restriction": "disallow"
+                },
+                {
+                    "act": "disseminate",
+                    "start_date": "1947-12-31",
+                    "end_date": "2017-12-30",
+                    "granted_note": "",
+                    "grant_restriction": "disallow"
+                }
+            ]
+        }
+    ],
+    "events": [
+        {
+            "url": "https://aurora.rockarch.org/api/events/60653/",
+            "type": "Accept",
+            "summary": "Transfer accessioned",
+            "object": "https://aurora.rockarch.org/api/transfers/19/",
+            "result": {
+                "name": "Transfer sent to archival storage"
+            },
+            "endTime": "2019-08-27 19:15:49.825716+00:00"
+        },
+        {
+            "url": "https://aurora.rockarch.org/api/events/60501/",
+            "type": "Accept",
+            "summary": "Transfer accepted by appraisal archivist",
+            "object": "https://aurora.rockarch.org/api/transfers/19/",
+            "result": {
+                "name": "Transfer staged for accessioning"
+            },
+            "endTime": "2019-08-27 13:29:13.938269+00:00"
+        },
+        {
+            "url": "https://aurora.rockarch.org/api/events/60453/",
+            "type": "Accept",
+            "summary": "Transfer passed all validation",
+            "object": "https://aurora.rockarch.org/api/transfers/19/",
+            "result": {
+                "name": "Transfer staged for appraisal"
+            },
+            "endTime": "2019-08-27 11:54:39.694874+00:00"
+        },
+        {
+            "url": "https://aurora.rockarch.org/api/events/60451/",
+            "type": "Accept",
+            "summary": "Transfer passed BagIt Profile and datatype validation",
+            "object": "https://aurora.rockarch.org/api/transfers/19/",
+            "result": {
+                "name": "Transfer staged for appraisal"
+            },
+            "endTime": "2019-08-27 11:54:39.691684+00:00"
+        },
+        {
+            "url": "https://aurora.rockarch.org/api/events/60449/",
+            "type": "Accept",
+            "summary": "Transfer passed BagIt validation",
+            "object": "https://aurora.rockarch.org/api/transfers/19/",
+            "result": {
+                "name": "Transfer staged for BagIt Profile validation"
+            },
+            "endTime": "2019-08-27 11:54:39.519245+00:00"
+        },
+        {
+            "url": "https://aurora.rockarch.org/api/events/60447/",
+            "type": "Accept",
+            "summary": "Transfer saved",
+            "object": "https://aurora.rockarch.org/api/transfers/19/",
+            "result": {
+                "name": "Transfer staged for BagIt validation"
+            },
+            "endTime": "2019-08-27 11:54:37.956079+00:00"
+        }
+    ],
+    "archivesspace_identifier": "/repositories/2/archival_objects/1150893",
+    "archivesspace_parent_identifier": "/repositories/2/archival_objects/1150892",
+    "created_time": "2019-08-27T07:54:37.952659-04:00",
+    "modified_time": "2020-06-04T11:06:12.832484-04:00"
+}

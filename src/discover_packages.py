@@ -85,7 +85,7 @@ class PackageDiscoverer(object):
             data (dict): data about the package
         """
         with tarfile.open(downloaded_path, "r:gz") as outer_tar:
-            # Extract and validate JSON data
+            """Extract and validate JSON data"""
             json_file = outer_tar.extractfile(f"{self.package_id}/{self.package_id}.json")
             package_data = json.load(json_file)
             try:
@@ -94,7 +94,14 @@ class PackageDiscoverer(object):
                 raise Exception(
                     f"Invalid package data: {e} \n{package_data}")
 
-            # Extract and save nested package binary as .tar.gz
+            """Move Aurora package URL (if it exists) to identifiers"""
+            try:
+                aurora_url = package_data.pop('url')
+                package_data.setdefault('identifiers', {}).update({'aurora_package': aurora_url})
+            except KeyError:
+                pass
+
+            """Extract and save nested package binary as .tar.gz"""
             inner_tar_data = outer_tar.extractfile(f"{self.package_id}/{self.package_id}.tar.gz")
             storage_path = Path(self.storage_dir, f"{self.package_id}.tar.gz")
             with open(storage_path, "wb") as package_binary:
@@ -110,11 +117,11 @@ class PackageDiscoverer(object):
             package_path (pathlib.Path): location of the package binary
             data (dict): data about the package
         """
-        # Copy package binary
+        """Copy package binary"""
         derivative_path = Path(self.digitization_path, self.package_id)
         copy(package_path, derivative_path)
 
-        # Create package object in digitization service
+        """Create package object in digitization service"""
         try:
             r = requests.post(
                 self.digitization_url,
@@ -181,7 +188,6 @@ class PackageDiscoverer(object):
             data (dict): data about the package
         """
         client = get_client_with_role('sns', self.role_arn)
-        # TODO evaluate what package data is and how stable that model is over time
         package_data['package_path'] = package_path
         client.publish(
             TopicArn=self.sns_topic,
