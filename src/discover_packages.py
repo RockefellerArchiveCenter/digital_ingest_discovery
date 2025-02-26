@@ -99,6 +99,10 @@ class PackageDiscoverer(object):
             except KeyError:
                 pass
 
+            """Move metadata title to title key"""
+            if not package_data.get('title'):
+                package_data['title'] = package_data['metadata']['title']
+
             """Extract and save nested package binary as .tar.gz"""
             inner_tar_data = outer_tar.extractfile(f"{self.package_id}/{self.package_id}.tar.gz")
             storage_path = Path(self.storage_dir, f"{self.package_id}.tar.gz")
