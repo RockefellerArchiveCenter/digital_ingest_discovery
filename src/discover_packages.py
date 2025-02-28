@@ -31,7 +31,7 @@ class PackageDiscoverer(object):
         self.digitization_path = digitization_path
         self.digitization_url = digitization_url
         self.role_arn = role_arn
-        self.service_name = 'ursa_major'
+        self.service_name = 'digital_ingest_discovery'
         self.sns_topic = sns_topic
         self.source_bucket = source_bucket
         self.storage_dir = storage_dir

@@ -14,7 +14,7 @@ jobs:
       name: ${{ github.ref_name }}
 
     env:
-      APPLICATION_NAME: ursa_major
+      APPLICATION_NAME: digital_ingest_discovery
 
     services:
       docker:

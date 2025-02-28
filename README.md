@@ -1,18 +1,16 @@
-# ursa major
+# digital_ingest_discovery
 
 A microservice to discover packages.
-
-ursa major is part of [Project Electron](https://github.com/RockefellerArchiveCenter/project_electron), an initiative to build sustainable, open and user-centered infrastructure for the archival management of digital records at the [Rockefeller Archive Center](http://rockarch.org/).
 
 ## Getting Started
 
 If you have [git](https://git-scm.com/) and [Docker](https://www.docker.com/community-edition) installed, using this repository is as simple as:
 
 ```
-git clone https://github.com/RockefellerArchiveCenter/ursa_major.git
-cd ursa_major
-docker build -t ursa_major .
-docker run ursa_major
+git clone https://github.com/RockefellerArchiveCenter/digital_ingest_discovery.git
+cd digital_ingest_discovery
+docker build -t digital_ingest_discovery .
+docker run digital_ingest_discovery
 ```
 
 ## Usage

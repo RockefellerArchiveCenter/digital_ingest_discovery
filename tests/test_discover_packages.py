@@ -14,7 +14,7 @@ ARGS = [
     'f78742e5-6af9-4756-a94a-6cd297406d50',  # package_id
     '/digitization',  # digitization_path
     'https://zorya.rockarch.org/package',  # digitization_url
-    'ursa-major-dev-role-arn',  # role_arn
+    'digital-ingest-discovery-dev-role-arn',  # role_arn
     'topic',  # sns_topic
     'digital-ingest-upload',  # source_bucket
     '/storage',  # storage_dir
@@ -28,7 +28,7 @@ def test_init():
     assert discoverer.package_id == 'f78742e5-6af9-4756-a94a-6cd297406d50'
     assert discoverer.digitization_path == '/digitization'
     assert discoverer.digitization_url == 'https://zorya.rockarch.org/package'
-    assert discoverer.role_arn == 'ursa-major-dev-role-arn'
+    assert discoverer.role_arn == 'digital-ingest-discovery-dev-role-arn'
     assert discoverer.sns_topic == 'topic'
     assert discoverer.source_bucket == 'digital-ingest-upload'
     assert discoverer.storage_dir == '/storage'
@@ -38,12 +38,12 @@ def test_init():
         'f78742e5-6af9-4756-a94a-6cd297406d50',
         '/digit tmp_digitization',
         'https://zorya.rockarch.org/package',
-        'ursa-major-dev-role-arn',
+        'digital-ingest-discovery-dev-role-arn',
         'topic',
         'digital-ingest-upload',
         'ssm_path',
         '/storage',
-        '/dev/ursa_major']
+        '/dev/digital_ingest_discovery']
     with pytest.raises(Exception):
         PackageDiscoverer(*invalid_args)
 
