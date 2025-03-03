@@ -35,7 +35,27 @@ jobs:
       - name: Run pip-compile
         run: pip-compile --upgrade
 
-      - uses: actions/checkout@v4.2.2
+      - name: Run GitHub Actions Version Updater
+        uses: saadmk11/github-actions-version-updater@v0.8.1
         with:
           token: ${{ secrets.ACCESS_TOKEN }}
-          ref: development
+          skip_pull_request: "true"
+
+      - name: Create patch
+        if: always()
+        run: |
+          git diff > changes.patch
+          git apply --allow-empty "changes.patch"
+      
+      - name: Delete patch file
+        if: always()
+        run: rm -f changes.patch
+
+      - name: Create Pull Request
+        if: always()
+        uses: peter-evans/create-pull-request@v7.0.7
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
+          branch: dependency-updates
+          title: "Dependency Updates"
+          commit-message: "Scheduled dependency updates"
