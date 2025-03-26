@@ -14,7 +14,8 @@ ARGS = [
     'f78742e5-6af9-4756-a94a-6cd297406d50',  # package_id
     '/digitization',  # digitization_path
     'https://zorya.rockarch.org/package',  # digitization_url
-    'digital-ingest-discovery-dev-role-arn',  # role_arn
+    'digital-ingest-discovery-dev-s3-role-arn',  # s3_role_arn
+    'digital-ingest-discovery-dev-sns-role-arn',  # sns_role_arn
     'topic',  # sns_topic
     'digital-ingest-upload',  # source_bucket
     '/storage',  # storage_dir
@@ -28,7 +29,8 @@ def test_init():
     assert discoverer.package_id == 'f78742e5-6af9-4756-a94a-6cd297406d50'
     assert discoverer.digitization_path == '/digitization'
     assert discoverer.digitization_url == 'https://zorya.rockarch.org/package'
-    assert discoverer.role_arn == 'digital-ingest-discovery-dev-role-arn'
+    assert discoverer.s3_role_arn == 'digital-ingest-discovery-dev-s3-role-arn'
+    assert discoverer.sns_role_arn == 'digital-ingest-discovery-dev-sns-role-arn'
     assert discoverer.sns_topic == 'topic'
     assert discoverer.source_bucket == 'digital-ingest-upload'
     assert discoverer.storage_dir == '/storage'
@@ -41,7 +43,6 @@ def test_init():
         'digital-ingest-discovery-dev-role-arn',
         'topic',
         'digital-ingest-upload',
-        'ssm_path',
         '/storage',
         '/dev/digital_ingest_discovery']
     with pytest.raises(Exception):
@@ -247,7 +248,7 @@ def test_deliver_start_notification(mock_role):
     )
 
     default_args = ARGS
-    default_args[4] = topic_arn
+    default_args[5] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
 
     discoverer.deliver_start_notification()
@@ -276,7 +277,7 @@ def test_deliver_success_notification(mock_role):
     )
 
     default_args = ARGS
-    default_args[4] = topic_arn
+    default_args[5] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
 
     package_path = f"/tmp/{default_args[0]}"
@@ -312,7 +313,7 @@ def test_deliver_failure_notification(mock_traceback, mock_role):
     )
 
     default_args = ARGS
-    default_args[4] = topic_arn
+    default_args[5] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
     exception_message = "foo"
     exception = Exception(exception_message)

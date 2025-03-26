@@ -22,7 +22,8 @@ class PackageDiscoverer(object):
                  package_id,
                  digitization_path,
                  digitization_url,
-                 role_arn,
+                 s3_role_arn,
+                 sns_role_arn,
                  sns_topic,
                  source_bucket,
                  storage_dir,
@@ -30,8 +31,9 @@ class PackageDiscoverer(object):
         self.package_id = package_id
         self.digitization_path = digitization_path
         self.digitization_url = digitization_url
-        self.role_arn = role_arn
+        self.s3_role_arn = s3_role_arn
         self.service_name = 'digital_ingest_discovery'
+        self.sns_role_arn = sns_role_arn
         self.sns_topic = sns_topic
         self.source_bucket = source_bucket
         self.storage_dir = storage_dir
@@ -64,7 +66,7 @@ class PackageDiscoverer(object):
         Returns:
             package_path (pathlib.Path): path to package binary
         """
-        s3_client = get_client_with_role('s3', self.role_arn)
+        s3_client = get_client_with_role('s3', self.s3_role_arn)
         s3_client.download_file(
             self.source_bucket,
             f"{self.package_id}.tar.gz",
@@ -162,7 +164,7 @@ class PackageDiscoverer(object):
         logging.debug('Cleanup from failed job completed.')
 
     def deliver_start_notification(self):
-        client = get_client_with_role('sns', self.role_arn)
+        client = get_client_with_role('sns', self.sns_role_arn)
         client.publish(
             TopicArn=self.sns_topic,
             Message=f'Discovery for {self.package_id} started.',
@@ -189,7 +191,7 @@ class PackageDiscoverer(object):
             package_path (pathlib.Path): location of the package binary
             data (dict): data about the package
         """
-        client = get_client_with_role('sns', self.role_arn)
+        client = get_client_with_role('sns', self.sns_role_arn)
         package_data['package_path'] = package_path
         client.publish(
             TopicArn=self.sns_topic,
@@ -222,7 +224,7 @@ class PackageDiscoverer(object):
             data (dict): data about the package
             exception (Exception): the exception that was thrown.
         """
-        client = get_client_with_role('sns', self.role_arn)
+        client = get_client_with_role('sns', self.sns_role_arn)
         tb = ''.join(traceback.format_exception(exception)[:-1])
         client.publish(
             TopicArn=self.sns_topic,
@@ -256,7 +258,8 @@ if __name__ == '__main__':
     package_id = os.environ.get('PACKAGE_ID')
     digitization_path = os.environ.get('DIGITIZATION_PATH')
     digitization_url = os.environ.get('DIGITIZATION_URL')
-    role_arn = os.environ.get('AWS_ROLE_ARN')
+    s3_role_arn = os.environ.get('AWS_S3_ROLE_ARN')
+    sns_role_arn = os.environ.get('AWS_SNS_ROLE_ARN')
     sns_topic = os.environ.get('AWS_SNS_TOPIC')
     source_bucket = os.environ.get('AWS_SOURCE_BUCKET')
     storage_dir = os.environ.get('STORAGE_DIR')
@@ -266,7 +269,8 @@ if __name__ == '__main__':
         package_id,
         digitization_path,
         digitization_path,
-        role_arn,
+        s3_role_arn,
+        sns_role_arn,
         sns_topic,
         source_bucket,
         storage_dir,
