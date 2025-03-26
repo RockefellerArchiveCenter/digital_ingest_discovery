@@ -14,19 +14,11 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - name: Create app token
-        uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ secrets.ACCESS_TOKEN }}
           ref: development
-          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -43,12 +35,27 @@ jobs:
       - name: Run pip-compile
         run: pip-compile --upgrade
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6.0.2
+      - name: Run GitHub Actions Version Updater
+        uses: saadmk11/github-actions-version-updater@v0.8.1
         with:
-          token: ${{ steps.app-token.outputs.token }}
-          base: development
+          token: ${{ secrets.ACCESS_TOKEN }}
+          skip_pull_request: "true"
+
+      - name: Create patch
+        if: always()
+        run: |
+          git diff > changes.patch
+          git apply --allow-empty "changes.patch"
+      
+      - name: Delete patch file
+        if: always()
+        run: rm -f changes.patch
+
+      - name: Create Pull Request
+        if: always()
+        uses: peter-evans/create-pull-request@v7.0.7
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
           branch: dependency-updates
-          delete-branch: true
-          title: Dependency Updates
-          commit-message: Dependency updates
+          title: "Dependency Updates"
+          commit-message: "Scheduled dependency updates"
