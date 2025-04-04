@@ -12,8 +12,7 @@ from src.discover_packages import PackageDiscoverer
 
 ARGS = [
     'f78742e5-6af9-4756-a94a-6cd297406d50',  # package_id
-    '/digitization',  # digitization_path
-    'https://zorya.rockarch.org/package',  # digitization_url
+    'rac-dev-iiif-upload',  # iiif-bucket
     'digital-ingest-discovery-dev-s3-role-arn',  # s3_role_arn
     'digital-ingest-discovery-dev-sns-role-arn',  # sns_role_arn
     'topic',  # sns_topic
@@ -27,8 +26,7 @@ def test_init():
     """Asserts Validator init method sets attributes correctly."""
     discoverer = PackageDiscoverer(*ARGS)
     assert discoverer.package_id == 'f78742e5-6af9-4756-a94a-6cd297406d50'
-    assert discoverer.digitization_path == '/digitization'
-    assert discoverer.digitization_url == 'https://zorya.rockarch.org/package'
+    assert discoverer.iiif_bucket == 'rac-dev-iiif-upload'
     assert discoverer.s3_role_arn == 'digital-ingest-discovery-dev-s3-role-arn'
     assert discoverer.sns_role_arn == 'digital-ingest-discovery-dev-sns-role-arn'
     assert discoverer.sns_topic == 'topic'
@@ -38,8 +36,6 @@ def test_init():
 
     invalid_args = [
         'f78742e5-6af9-4756-a94a-6cd297406d50',
-        '/digit tmp_digitization',
-        'https://zorya.rockarch.org/package',
         'digital-ingest-discovery-dev-role-arn',
         'topic',
         'digital-ingest-upload',
@@ -52,7 +48,7 @@ def test_init():
 @patch('src.discover_packages.PackageDiscoverer.deliver_start_notification')
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
-@patch('src.discover_packages.PackageDiscoverer.deliver_to_digitization')
+@patch('src.discover_packages.PackageDiscoverer.deliver_to_iiif_pipeline')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
@@ -87,7 +83,7 @@ def test_run_born_digital(
 @patch('src.discover_packages.PackageDiscoverer.deliver_start_notification')
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
-@patch('src.discover_packages.PackageDiscoverer.deliver_to_digitization')
+@patch('src.discover_packages.PackageDiscoverer.deliver_to_iiif_pipeline')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
@@ -114,7 +110,7 @@ def test_run_digitized(
     mock_failed_cleanup.assert_not_called()
     mock_success_notification.assert_called_once_with(storage_path, package_data)
     mock_success_cleanup.assert_called_once_with(download_path)
-    mock_deliver.assert_called_once_with(storage_path, package_data)
+    mock_deliver.assert_called_once_with(storage_path)
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
     mock_start_notification.assert_called_once_with()
@@ -179,8 +175,8 @@ def test_unpack():
             assert package_data == expected_data
 
 
-@patch('requests.post')
-def test_deliver_to_digitization(mock_post):
+@mock_aws
+def test_deliver_to_iiif_pipeline():
     """Tests binary is correctly moved and POST request is sent with correct data."""
     discoverer = PackageDiscoverer(*ARGS)
     fixture_path = Path(
@@ -190,18 +186,14 @@ def test_deliver_to_digitization(mock_post):
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     storage_path = Path(discoverer.storage_dir, f"{discoverer.package_id}.tar.gz")
     copy(fixture_path, storage_path)
-    package_data = {"origin": "digitization", "identifier": "f78742e5-6af9-4756-a94a-6cd297406d50"}
+    s3 = boto3.client('s3', region_name='us-east-1')
+    s3.create_bucket(Bucket=discoverer.iiif_bucket)
 
-    discoverer.deliver_to_digitization(storage_path, package_data)
+    discoverer.deliver_to_iiif_pipeline(storage_path)
 
-    Path(discoverer.digitization_path, f"{discoverer.package_id}.tar.gz").is_file()
-    mock_post.assert_called_once_with(
-        discoverer.digitization_url,
-        json={
-            "bag_data": package_data,
-            "origin": "digitization",
-            "identifier": "f78742e5-6af9-4756-a94a-6cd297406d50"},
-        headers={'Content-Type': 'application/json'})
+    assert s3.get_object(
+        Bucket=discoverer.iiif_bucket,
+        Key=f"{discoverer.package_id}.tar.gz")
 
 
 def test_cleanup_successful_job():
@@ -248,7 +240,7 @@ def test_deliver_start_notification(mock_role):
     )
 
     default_args = ARGS
-    default_args[5] = topic_arn
+    default_args[4] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
 
     discoverer.deliver_start_notification()
@@ -277,7 +269,7 @@ def test_deliver_success_notification(mock_role):
     )
 
     default_args = ARGS
-    default_args[5] = topic_arn
+    default_args[4] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
 
     package_path = f"/tmp/{default_args[0]}"
@@ -313,7 +305,7 @@ def test_deliver_failure_notification(mock_traceback, mock_role):
     )
 
     default_args = ARGS
-    default_args[5] = topic_arn
+    default_args[4] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
     exception_message = "foo"
     exception = Exception(exception_message)
