@@ -4,10 +4,10 @@ import os
 import tarfile
 import traceback
 from pathlib import Path
-from shutil import copy, copyfileobj
+from shutil import copyfileobj
 
+import boto3
 import rac_schema_validator
-import requests
 
 from .helpers import get_client_with_role, validate_package_data
 
@@ -20,8 +20,7 @@ class PackageDiscoverer(object):
 
     def __init__(self,
                  package_id,
-                 digitization_path,
-                 digitization_url,
+                 iiif_bucket,
                  s3_role_arn,
                  sns_role_arn,
                  sns_topic,
@@ -29,8 +28,7 @@ class PackageDiscoverer(object):
                  storage_dir,
                  tmp_dir):
         self.package_id = package_id
-        self.digitization_path = digitization_path
-        self.digitization_url = digitization_url
+        self.iiif_bucket = iiif_bucket
         self.s3_role_arn = s3_role_arn
         self.service_name = 'digital_ingest_discovery'
         self.sns_role_arn = sns_role_arn
@@ -38,7 +36,7 @@ class PackageDiscoverer(object):
         self.source_bucket = source_bucket
         self.storage_dir = storage_dir
         self.tmp_dir = tmp_dir
-        for fp in [self.digitization_path, self.storage_dir, self.tmp_dir]:
+        for fp in [self.storage_dir, self.tmp_dir]:
             Path(fp).mkdir(exist_ok=True)
 
     def run(self):
@@ -50,14 +48,14 @@ class PackageDiscoverer(object):
             self.download(downloaded_path)
             package_path, package_data = self.unpack(downloaded_path)
             if package_data.get('origin') == 'digitization':
-                self.deliver_to_digitization(package_path, package_data)
+                self.deliver_to_iiif_pipeline(package_path)
             self.cleanup_successful_job(downloaded_path)
             self.deliver_success_notification(package_path, package_data)
             logging.info(
                 f'Package {self.package_id} successfully discovered.')
         except Exception as e:
             logging.exception(e)
-            self.cleanup_failed_job(downloaded_path)
+            self.cleanup_failed_job(downloaded_path)  # TODO should this also include the storage path?
             self.deliver_failure_notification(e)
 
     def download(self, download_path):
@@ -114,35 +112,25 @@ class PackageDiscoverer(object):
         logging.debug(f'Package unpacked to {self.storage_dir}.')
         return storage_path, package_data
 
-    def deliver_to_digitization(self, package_path, package_data):
+    def deliver_to_iiif_pipeline(self, package_path):
         """Deliver package to digitization services.
 
         Args:
             package_path (pathlib.Path): location of the package binary
-            data (dict): data about the package
         """
-        """Copy package binary"""
-        derivative_path = Path(self.digitization_path, self.package_id)
-        copy(package_path, derivative_path)
-
-        """Create package object in digitization service"""
-        try:
-            r = requests.post(
-                self.digitization_url,
-                json={
-                    "bag_data": package_data,
-                    "origin": package_data['origin'],
-                    "identifier": package_data['identifier']},
-                headers={"Content-Type": "application/json"},
-            )
-            r.raise_for_status()
-            logging.debug(
-                f'Package delivereed to digitization services at location {derivative_path} and URL {self.digitization_url}.')
-        except requests.exceptions.HTTPError as e:
-            if r.text:
-                raise Exception(r.text)
-            else:
-                raise e
+        s3_client = get_client_with_role('s3', self.s3_role_arn)
+        transfer_config = boto3.s3.transfer.TransferConfig(
+            multipart_threshold=1024 * 25,
+            max_concurrency=10,
+            multipart_chunksize=1024 * 25,
+            use_threads=True)
+        s3_client.upload_file(
+            package_path,
+            self.iiif_bucket,
+            package_path.name,
+            ExtraArgs={'ContentType': 'application/gzip'},
+            Config=transfer_config)
+        logging.debug(f'{package_path.name} uploaded to bucket {self.iiif_bucket}.')
 
     def cleanup_successful_job(self, downloaded_path):
         """Remove temporary files created during processing.
