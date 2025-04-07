@@ -43,8 +43,8 @@ class PackageDiscoverer(object):
         logging.debug(
             f'Discovery started for package {self.package_id}.')
         try:
-            self.deliver_start_notification()
             downloaded_path = Path(self.tmp_dir, f"{self.package_id}.tar.gz")
+            self.deliver_start_notification()
             self.download(downloaded_path)
             package_path, package_data = self.unpack(downloaded_path)
             if package_data.get('origin') == 'digitization':
@@ -95,7 +95,8 @@ class PackageDiscoverer(object):
             """Move Aurora package URL (if it exists) to identifiers"""
             try:
                 aurora_url = package_data.pop('url')
-                package_data.setdefault('identifiers', {}).update({'aurora_package': aurora_url})
+                package_data.setdefault('identifiers', {})
+                package_data['identifiers'].update({'aurora_package': aurora_url})
             except KeyError:
                 pass
 
