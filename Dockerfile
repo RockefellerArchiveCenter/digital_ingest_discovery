@@ -11,4 +11,4 @@ RUN pip install -r test_requirements.txt
 COPY tests tests
 
 FROM base AS build
-CMD [ "python", "src/discover_packages.py" ]
+CMD [ "python", "-m", "src.discover_packages" ]
