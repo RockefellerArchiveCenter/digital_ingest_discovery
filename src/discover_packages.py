@@ -9,7 +9,7 @@ from shutil import copyfileobj
 import boto3
 import rac_schema_validator
 
-from .helpers import get_client_with_role, validate_package_data
+from src.helpers import get_client_with_role, validate_package_data
 
 logging.basicConfig(
     level=int(os.environ.get('LOGGING_LEVEL', logging.INFO)),
