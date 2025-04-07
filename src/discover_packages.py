@@ -95,8 +95,8 @@ class PackageDiscoverer(object):
             """Move Aurora package URL (if it exists) to identifiers"""
             try:
                 aurora_url = package_data.pop('url')
-                package_data.setdefault('identifiers', {})
-                logging.info(package_data)
+                if not package_data.get('identifiers'):
+                    package_data['identifiers'] = {}
                 package_data['identifiers'].update({'aurora_package': aurora_url})
             except KeyError:
                 pass
