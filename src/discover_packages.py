@@ -244,8 +244,7 @@ class PackageDiscoverer(object):
 
 if __name__ == '__main__':
     package_id = os.environ.get('PACKAGE_ID')
-    digitization_path = os.environ.get('DIGITIZATION_PATH')
-    digitization_url = os.environ.get('DIGITIZATION_URL')
+    iiif_bucket = os.environ.get('AWS_IIIF_BUCKET')
     s3_role_arn = os.environ.get('AWS_S3_ROLE_ARN')
     sns_role_arn = os.environ.get('AWS_SNS_ROLE_ARN')
     sns_topic = os.environ.get('AWS_SNS_TOPIC')
@@ -255,8 +254,7 @@ if __name__ == '__main__':
 
     PackageDiscoverer(
         package_id,
-        digitization_path,
-        digitization_path,
+        iiif_bucket,
         s3_role_arn,
         sns_role_arn,
         sns_topic,
