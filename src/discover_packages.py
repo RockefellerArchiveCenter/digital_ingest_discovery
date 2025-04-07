@@ -50,8 +50,7 @@ class PackageDiscoverer(object):
             if package_data.get('origin') == 'digitization':
                 self.deliver_to_iiif_pipeline(package_path)
             self.cleanup_successful_job(downloaded_path)
-            logging.info(package_data)
-            self.deliver_success_notification(package_path, package_data)
+            self.deliver_success_notification(package_data)
             logging.info(
                 f'Package {self.package_id} successfully discovered.')
         except Exception as e:
@@ -176,7 +175,7 @@ class PackageDiscoverer(object):
             })
         logging.debug('Start notification delivered.')
 
-    def deliver_success_notification(self, package_path, package_data):
+    def deliver_success_notification(self, package_data):
         """Send SNS message about successful job.
 
         Args:
@@ -184,7 +183,6 @@ class PackageDiscoverer(object):
             data (dict): data about the package
         """
         client = get_client_with_role('sns', self.sns_role_arn)
-        package_data['package_path'] = package_path
         client.publish(
             TopicArn=self.sns_topic,
             Message=f'Package {self.package_id} successfully discovered.',

@@ -72,7 +72,7 @@ def test_run_born_digital(
     discoverer.run()
     mock_failure_notification.assert_not_called()
     mock_failed_cleanup.assert_not_called()
-    mock_success_notification.assert_called_once_with(storage_path, package_data)
+    mock_success_notification.assert_called_once_with(package_data)
     mock_success_cleanup.assert_called_once_with(download_path)
     mock_deliver.assert_not_called()
     mock_unpack.assert_called_once_with(download_path)
@@ -108,7 +108,7 @@ def test_run_digitized(
     discoverer.run()
     mock_failure_notification.assert_not_called()
     mock_failed_cleanup.assert_not_called()
-    mock_success_notification.assert_called_once_with(storage_path, package_data)
+    mock_success_notification.assert_called_once_with(package_data)
     mock_success_cleanup.assert_called_once_with(download_path)
     mock_deliver.assert_called_once_with(storage_path)
     mock_unpack.assert_called_once_with(download_path)
@@ -272,9 +272,8 @@ def test_deliver_success_notification(mock_role):
     default_args[4] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
 
-    package_path = f"/tmp/{default_args[0]}"
     package_data = {}
-    discoverer.deliver_success_notification(package_path, package_data)
+    discoverer.deliver_success_notification(package_data)
 
     queue = sqs_conn.get_queue_by_name(QueueName="test-queue")
     messages = queue.receive_messages(MaxNumberOfMessages=1)
@@ -282,10 +281,8 @@ def test_deliver_success_notification(mock_role):
     assert message_body['MessageAttributes']['outcome']['Value'] == 'SUCCESS'
     assert message_body['MessageAttributes']['package_id']['Value'] == discoverer.package_id
     assert message_body['MessageAttributes']['service']['Value'] == discoverer.service_name
-
     json_data = json.loads(message_body['MessageAttributes']['package_data']['Value'])
     assert isinstance(json_data, dict)
-    assert json_data['package_path'] == package_path
 
 
 @mock_aws
