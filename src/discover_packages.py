@@ -50,6 +50,7 @@ class PackageDiscoverer(object):
             if package_data.get('origin') == 'digitization':
                 self.deliver_to_iiif_pipeline(package_path)
             self.cleanup_successful_job(downloaded_path)
+            logging.info(package_data)
             self.deliver_success_notification(package_path, package_data)
             logging.info(
                 f'Package {self.package_id} successfully discovered.')
@@ -93,13 +94,14 @@ class PackageDiscoverer(object):
                     f"Invalid package data: {e} \n{package_data}")
 
             """Move Aurora package URL (if it exists) to identifiers"""
-            try:
-                aurora_url = package_data.pop('url')
-                if not package_data.get('identifiers'):
-                    package_data['identifiers'] = {}
-                package_data['identifiers'].update({'aurora_package': aurora_url})
-            except KeyError:
-                pass
+            if package_data.get('origin', 'aurora') == 'aurora':
+                try:
+                    aurora_url = package_data.pop('url')
+                    if not package_data.get('identifiers'):
+                        package_data['identifiers'] = {}
+                    package_data['identifiers'].update({'aurora_package': aurora_url})
+                except KeyError:
+                    pass
 
             """Move metadata title to title key"""
             if not package_data.get('title'):
@@ -201,7 +203,7 @@ class PackageDiscoverer(object):
                 },
                 'package_data': {
                     'DataType': 'String',
-                    'StringValue': json.dumps(package_data),
+                    'StringValue': json.dumps(package_data, default=str),
                 },
             })
         logging.debug('Success notification delivered.')
