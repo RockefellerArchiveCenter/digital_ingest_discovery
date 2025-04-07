@@ -96,6 +96,7 @@ class PackageDiscoverer(object):
             try:
                 aurora_url = package_data.pop('url')
                 package_data.setdefault('identifiers', {})
+                logging.info(package_data)
                 package_data['identifiers'].update({'aurora_package': aurora_url})
             except KeyError:
                 pass
