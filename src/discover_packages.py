@@ -163,7 +163,7 @@ class PackageDiscoverer(object):
         client = get_client_with_role('sns', self.sns_role_arn)
         client.publish(
             TopicArn=self.sns_topic,
-            Message=f'Package {self.package_id} successfully discovered.',
+            Message=json.dumps(package_data, default=str),
             MessageAttributes={
                 'package_id': {
                     'DataType': 'String',
@@ -177,9 +177,9 @@ class PackageDiscoverer(object):
                     'DataType': 'String',
                     'StringValue': 'SUCCESS',
                 },
-                'package_data': {
+                'message': {
                     'DataType': 'String',
-                    'StringValue': json.dumps(package_data, default=str),
+                    'StringValue': f'Package {self.package_id} successfully discovered.',
                 },
             })
         logging.debug('Success notification delivered.')
