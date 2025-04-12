@@ -240,11 +240,11 @@ def test_deliver_success_notification(mock_role):
     queue = sqs_conn.get_queue_by_name(QueueName="test-queue")
     messages = queue.receive_messages(MaxNumberOfMessages=1)
     message_body = json.loads(messages[0].body)
+    assert message_body['Message'] == json.dumps(package_data)
     assert message_body['MessageAttributes']['outcome']['Value'] == 'SUCCESS'
     assert message_body['MessageAttributes']['package_id']['Value'] == discoverer.package_id
     assert message_body['MessageAttributes']['service']['Value'] == discoverer.service_name
-    json_data = json.loads(message_body['MessageAttributes']['package_data']['Value'])
-    assert isinstance(json_data, dict)
+    assert message_body['MessageAttributes']['message']['Value'] == f'Package {discoverer.package_id} successfully discovered.'
 
 
 @mock_aws
