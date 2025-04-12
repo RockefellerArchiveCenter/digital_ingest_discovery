@@ -196,7 +196,7 @@ class PackageDiscoverer(object):
         tb = ''.join(traceback.format_exception(exception)[:-1])
         client.publish(
             TopicArn=self.sns_topic,
-            Message=f'Package {self.package_id} failed during discovery.',
+            Message=tb,
             MessageAttributes={
                 'package_id': {
                     'DataType': 'String',
@@ -213,10 +213,6 @@ class PackageDiscoverer(object):
                 'message': {
                     'DataType': 'String',
                     'StringValue': str(exception),
-                },
-                'traceback': {
-                    'DataType': 'String',
-                    'StringValue': tb,
                 }
             })
         logging.debug('Failure notification delivered.')
