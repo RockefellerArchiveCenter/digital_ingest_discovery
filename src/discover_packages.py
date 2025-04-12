@@ -44,7 +44,6 @@ class PackageDiscoverer(object):
             f'Discovery started for package {self.package_id}.')
         try:
             downloaded_path = Path(self.tmp_dir, f"{self.package_id}.tar.gz")
-            self.deliver_start_notification()
             self.download(downloaded_path)
             package_path, package_data = self.unpack(downloaded_path)
             if package_data.get('origin') == 'digitization':
@@ -153,27 +152,6 @@ class PackageDiscoverer(object):
         """
         downloaded_path.unlink(missing_ok=True)
         logging.debug('Cleanup from failed job completed.')
-
-    def deliver_start_notification(self):
-        client = get_client_with_role('sns', self.sns_role_arn)
-        client.publish(
-            TopicArn=self.sns_topic,
-            Message=f'Discovery for {self.package_id} started.',
-            MessageAttributes={
-                'package_id': {
-                    'DataType': 'String',
-                    'StringValue': self.package_id,
-                },
-                'service': {
-                    'DataType': 'String',
-                    'StringValue': self.service_name,
-                },
-                'outcome': {
-                    'DataType': 'String',
-                    'StringValue': 'STARTED',
-                }
-            })
-        logging.debug('Start notification delivered.')
 
     def deliver_success_notification(self, package_data):
         """Send SNS message about successful job.
