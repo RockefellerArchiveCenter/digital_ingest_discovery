@@ -6,7 +6,6 @@ import traceback
 from pathlib import Path
 from shutil import copyfileobj
 
-import boto3
 import rac_schema_validator
 
 from src.helpers import get_client_with_role, validate_package_data
