@@ -6,7 +6,6 @@ import traceback
 from pathlib import Path
 from shutil import copyfileobj
 
-import boto3
 import rac_schema_validator
 
 from src.helpers import get_client_with_role, validate_package_data
@@ -121,17 +120,11 @@ class PackageDiscoverer(object):
             package_path (pathlib.Path): location of the package binary
         """
         s3_client = get_client_with_role('s3', self.s3_role_arn)
-        transfer_config = boto3.s3.transfer.TransferConfig(
-            multipart_threshold=1024 * 25,
-            max_concurrency=10,
-            multipart_chunksize=1024 * 25,
-            use_threads=True)
         s3_client.upload_file(
             package_path,
             self.iiif_bucket,
             package_path.name,
-            ExtraArgs={'ContentType': 'application/gzip'},
-            Config=transfer_config)
+            ExtraArgs={'ContentType': 'application/gzip'})
         logging.debug(f'{package_path.name} uploaded to bucket {self.iiif_bucket}.')
 
     def cleanup_successful_job(self, downloaded_path):
