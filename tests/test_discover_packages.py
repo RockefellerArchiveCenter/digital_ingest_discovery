@@ -221,13 +221,26 @@ def test_deliver_success_notification(mock_role):
     """Asserts success messages are delivered as expected."""
     sns = boto3.client('sns', region_name='us-east-1')
     mock_role.return_value = sns
-    topic_arn = sns.create_topic(Name='my-topic')['TopicArn']
+    topic_arn = sns.create_topic(
+        Name='my-topic.fifo',
+        Attributes={
+            "FifoTopic": "true",
+            "ContentBasedDeduplication": "true"
+        }
+    )['TopicArn']
     sqs_conn = boto3.resource("sqs", region_name="us-east-1")
-    sqs_conn.create_queue(QueueName="test-queue")
+    queue_name = "test-queue.fifo"
+    sqs_conn.create_queue(
+        QueueName=queue_name,
+        Attributes={
+            "FifoQueue": "true",
+            "ContentBasedDeduplication": "true"
+        }
+    )
     sns.subscribe(
         TopicArn=topic_arn,
         Protocol="sqs",
-        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:test-queue",
+        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:{queue_name}",
     )
 
     default_args = ARGS
@@ -237,7 +250,7 @@ def test_deliver_success_notification(mock_role):
     package_data = {}
     discoverer.deliver_success_notification(package_data)
 
-    queue = sqs_conn.get_queue_by_name(QueueName="test-queue")
+    queue = sqs_conn.get_queue_by_name(QueueName=queue_name)
     messages = queue.receive_messages(MaxNumberOfMessages=1)
     message_body = json.loads(messages[0].body)
     assert message_body['Message'] == json.dumps(package_data)
@@ -254,13 +267,26 @@ def test_deliver_failure_notification(mock_traceback, mock_role):
     """Asserts failure messages are delivered as expected."""
     sns = boto3.client('sns', region_name='us-east-1')
     mock_role.return_value = sns
-    topic_arn = sns.create_topic(Name='my-topic')['TopicArn']
+    topic_arn = sns.create_topic(
+        Name='my-topic.fifo',
+        Attributes={
+            "FifoTopic": "true",
+            "ContentBasedDeduplication": "true"
+        }
+    )['TopicArn']
     sqs_conn = boto3.resource("sqs", region_name="us-east-1")
-    sqs_conn.create_queue(QueueName="test-queue")
+    queue_name = "test-queue.fifo"
+    sqs_conn.create_queue(
+        QueueName=queue_name,
+        Attributes={
+            "FifoQueue": "true",
+            "ContentBasedDeduplication": "true"
+        }
+    )
     sns.subscribe(
         TopicArn=topic_arn,
         Protocol="sqs",
-        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:test-queue",
+        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:{queue_name}",
     )
 
     default_args = ARGS
@@ -272,7 +298,7 @@ def test_deliver_failure_notification(mock_traceback, mock_role):
 
     discoverer.deliver_failure_notification(exception)
 
-    queue = sqs_conn.get_queue_by_name(QueueName="test-queue")
+    queue = sqs_conn.get_queue_by_name(QueueName=queue_name)
     messages = queue.receive_messages(MaxNumberOfMessages=1)
     message_body = json.loads(messages[0].body)
     assert message_body['Message'] == "baz"
