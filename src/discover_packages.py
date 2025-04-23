@@ -156,7 +156,7 @@ class PackageDiscoverer(object):
         client = get_client_with_role('sns', self.sns_role_arn)
         client.publish(
             TopicArn=self.sns_topic,
-            MessageGroupId=self.service_name,
+            MessageGroupId=f'{self.service_name}-{self.package_id}',
             Message=json.dumps(package_data, default=str),
             MessageAttributes={
                 'package_id': {
@@ -190,7 +190,7 @@ class PackageDiscoverer(object):
         tb = ''.join(traceback.format_exception(exception)[:-1])
         client.publish(
             TopicArn=self.sns_topic,
-            MessageGroupId=self.service_name,
+            MessageGroupId=f'{self.service_name}-{self.package_id}',
             Message=tb,
             MessageAttributes={
                 'package_id': {
