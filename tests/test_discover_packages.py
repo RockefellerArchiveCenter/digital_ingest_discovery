@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 from moto import mock_aws
 from moto.core import DEFAULT_ACCOUNT_ID
 
@@ -187,9 +188,18 @@ def test_deliver_to_iiif_pipeline():
         Key=f"{discoverer.package_id}.tar.gz")
 
 
-def test_cleanup_successful_job():
+@mock_aws
+@patch('src.discover_packages.get_client_with_role')
+def test_cleanup_successful_job(mock_role):
     """Ensures file are cleaned up as expected."""
     discoverer = PackageDiscoverer(*ARGS)
+    s3 = boto3.client('s3', region_name='us-east-1')
+    mock_role.return_value = s3
+    s3.create_bucket(Bucket=discoverer.source_bucket)
+    s3.put_object(
+        Bucket=discoverer.source_bucket,
+        Key=f"{discoverer.package_id}.tar.gz",
+        Body='')
     fixture_path = Path(
         "tests",
         "fixtures",
@@ -197,8 +207,16 @@ def test_cleanup_successful_job():
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     tmp_path = Path(discoverer.tmp_dir, discoverer.package_id)
     copy(fixture_path, tmp_path)
+
     discoverer.cleanup_successful_job(tmp_path)
+
     assert not tmp_path.is_dir()
+    with pytest.raises(ClientError) as err:
+        s3.head_object(
+            Bucket=discoverer.source_bucket,
+            Key=f"{discoverer.package_id}.tar.gz",
+        )
+    assert '404' in str(err)
 
 
 def test_cleanup_failed_job():

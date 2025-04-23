@@ -133,6 +133,10 @@ class PackageDiscoverer(object):
         Args:
             downloaded_path (pathlib.Path): location of downloaded package binary
         """
+        s3_client = get_client_with_role('s3', self.s3_role_arn)
+        s3_client.delete_object(
+            Bucket=self.source_bucket,
+            Key=f"{self.package_id}.tar.gz")
         downloaded_path.unlink(missing_ok=True)
         logging.debug('Cleanup from successful job completed.')
 
