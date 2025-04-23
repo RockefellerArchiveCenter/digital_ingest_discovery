@@ -157,6 +157,7 @@ class PackageDiscoverer(object):
         client.publish(
             TopicArn=self.sns_topic,
             MessageGroupId=f'{self.service_name}-{self.package_id}',
+            MessageDeduplicationId=f'{self.service_name}-{self.package_id}-success',
             Message=json.dumps(package_data, default=str),
             MessageAttributes={
                 'package_id': {
@@ -191,6 +192,7 @@ class PackageDiscoverer(object):
         client.publish(
             TopicArn=self.sns_topic,
             MessageGroupId=f'{self.service_name}-{self.package_id}',
+            MessageDeduplicationId=f'{self.service_name}-{self.package_id}-failure',
             Message=tb,
             MessageAttributes={
                 'package_id': {
