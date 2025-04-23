@@ -207,9 +207,9 @@ def test_cleanup_successful_job(mock_role):
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     tmp_path = Path(discoverer.tmp_dir, discoverer.package_id)
     copy(fixture_path, tmp_path)
-    
+
     discoverer.cleanup_successful_job(tmp_path)
-    
+
     assert not tmp_path.is_dir()
     with pytest.raises(ClientError) as err:
         s3.head_object(
