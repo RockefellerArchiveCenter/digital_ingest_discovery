@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 from moto import mock_aws
 from moto.core import DEFAULT_ACCOUNT_ID
 
@@ -12,8 +13,7 @@ from src.discover_packages import PackageDiscoverer
 
 ARGS = [
     'f78742e5-6af9-4756-a94a-6cd297406d50',  # package_id
-    '/digitization',  # digitization_path
-    'https://zorya.rockarch.org/package',  # digitization_url
+    'rac-dev-iiif-upload',  # iiif-bucket
     'digital-ingest-discovery-dev-s3-role-arn',  # s3_role_arn
     'digital-ingest-discovery-dev-sns-role-arn',  # sns_role_arn
     'topic',  # sns_topic
@@ -27,8 +27,7 @@ def test_init():
     """Asserts Validator init method sets attributes correctly."""
     discoverer = PackageDiscoverer(*ARGS)
     assert discoverer.package_id == 'f78742e5-6af9-4756-a94a-6cd297406d50'
-    assert discoverer.digitization_path == '/digitization'
-    assert discoverer.digitization_url == 'https://zorya.rockarch.org/package'
+    assert discoverer.iiif_bucket == 'rac-dev-iiif-upload'
     assert discoverer.s3_role_arn == 'digital-ingest-discovery-dev-s3-role-arn'
     assert discoverer.sns_role_arn == 'digital-ingest-discovery-dev-sns-role-arn'
     assert discoverer.sns_topic == 'topic'
@@ -38,8 +37,6 @@ def test_init():
 
     invalid_args = [
         'f78742e5-6af9-4756-a94a-6cd297406d50',
-        '/digit tmp_digitization',
-        'https://zorya.rockarch.org/package',
         'digital-ingest-discovery-dev-role-arn',
         'topic',
         'digital-ingest-upload',
@@ -49,10 +46,9 @@ def test_init():
         PackageDiscoverer(*invalid_args)
 
 
-@patch('src.discover_packages.PackageDiscoverer.deliver_start_notification')
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
-@patch('src.discover_packages.PackageDiscoverer.deliver_to_digitization')
+@patch('src.discover_packages.PackageDiscoverer.deliver_to_iiif_pipeline')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
@@ -64,8 +60,7 @@ def test_run_born_digital(
         mock_success_cleanup,
         mock_deliver,
         mock_unpack,
-        mock_download,
-        mock_start_notification):
+        mock_download):
     """Ensures born digital packages trigger the correct methods and arguments."""
     discoverer = PackageDiscoverer(*ARGS)
     download_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
@@ -76,18 +71,16 @@ def test_run_born_digital(
     discoverer.run()
     mock_failure_notification.assert_not_called()
     mock_failed_cleanup.assert_not_called()
-    mock_success_notification.assert_called_once_with(storage_path, package_data)
+    mock_success_notification.assert_called_once_with(package_data)
     mock_success_cleanup.assert_called_once_with(download_path)
     mock_deliver.assert_not_called()
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
-    mock_start_notification.assert_called_once_with()
 
 
-@patch('src.discover_packages.PackageDiscoverer.deliver_start_notification')
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
-@patch('src.discover_packages.PackageDiscoverer.deliver_to_digitization')
+@patch('src.discover_packages.PackageDiscoverer.deliver_to_iiif_pipeline')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
@@ -99,8 +92,7 @@ def test_run_digitized(
         mock_success_cleanup,
         mock_deliver,
         mock_unpack,
-        mock_download,
-        mock_start_notification):
+        mock_download):
     """Ensures digitized packages trigger the correct methods and arguments."""
     discoverer = PackageDiscoverer(*ARGS)
     download_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
@@ -112,23 +104,20 @@ def test_run_digitized(
     discoverer.run()
     mock_failure_notification.assert_not_called()
     mock_failed_cleanup.assert_not_called()
-    mock_success_notification.assert_called_once_with(storage_path, package_data)
+    mock_success_notification.assert_called_once_with(package_data)
     mock_success_cleanup.assert_called_once_with(download_path)
-    mock_deliver.assert_called_once_with(storage_path, package_data)
+    mock_deliver.assert_called_once_with(storage_path)
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
-    mock_start_notification.assert_called_once_with()
 
 
-@patch('src.discover_packages.PackageDiscoverer.deliver_start_notification')
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
 def test_run_exception(
         mock_failure_notification,
         mock_failed_cleanup,
-        mock_download,
-        mock_start_notification):
+        mock_download):
     """Ensures exceptions are handled correctly."""
     discoverer = PackageDiscoverer(*ARGS)
     exception = Exception("Invalid refid.")
@@ -137,7 +126,6 @@ def test_run_exception(
     discoverer.run()
     mock_failure_notification.assert_called_once_with(exception)
     mock_failed_cleanup.assert_called_once_with(download_path)
-    mock_start_notification.assert_called_once_with()
 
 
 @mock_aws
@@ -179,8 +167,8 @@ def test_unpack():
             assert package_data == expected_data
 
 
-@patch('requests.post')
-def test_deliver_to_digitization(mock_post):
+@mock_aws
+def test_deliver_to_iiif_pipeline():
     """Tests binary is correctly moved and POST request is sent with correct data."""
     discoverer = PackageDiscoverer(*ARGS)
     fixture_path = Path(
@@ -190,23 +178,28 @@ def test_deliver_to_digitization(mock_post):
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     storage_path = Path(discoverer.storage_dir, f"{discoverer.package_id}.tar.gz")
     copy(fixture_path, storage_path)
-    package_data = {"origin": "digitization", "identifier": "f78742e5-6af9-4756-a94a-6cd297406d50"}
+    s3 = boto3.client('s3', region_name='us-east-1')
+    s3.create_bucket(Bucket=discoverer.iiif_bucket)
 
-    discoverer.deliver_to_digitization(storage_path, package_data)
+    discoverer.deliver_to_iiif_pipeline(storage_path)
 
-    Path(discoverer.digitization_path, f"{discoverer.package_id}.tar.gz").is_file()
-    mock_post.assert_called_once_with(
-        discoverer.digitization_url,
-        json={
-            "bag_data": package_data,
-            "origin": "digitization",
-            "identifier": "f78742e5-6af9-4756-a94a-6cd297406d50"},
-        headers={'Content-Type': 'application/json'})
+    assert s3.get_object(
+        Bucket=discoverer.iiif_bucket,
+        Key=f"{discoverer.package_id}.tar.gz")
 
 
-def test_cleanup_successful_job():
+@mock_aws
+@patch('src.discover_packages.get_client_with_role')
+def test_cleanup_successful_job(mock_role):
     """Ensures file are cleaned up as expected."""
     discoverer = PackageDiscoverer(*ARGS)
+    s3 = boto3.client('s3', region_name='us-east-1')
+    mock_role.return_value = s3
+    s3.create_bucket(Bucket=discoverer.source_bucket)
+    s3.put_object(
+        Bucket=discoverer.source_bucket,
+        Key=f"{discoverer.package_id}.tar.gz",
+        Body='')
     fixture_path = Path(
         "tests",
         "fixtures",
@@ -214,8 +207,16 @@ def test_cleanup_successful_job():
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     tmp_path = Path(discoverer.tmp_dir, discoverer.package_id)
     copy(fixture_path, tmp_path)
+
     discoverer.cleanup_successful_job(tmp_path)
+
     assert not tmp_path.is_dir()
+    with pytest.raises(ClientError) as err:
+        s3.head_object(
+            Bucket=discoverer.source_bucket,
+            Key=f"{discoverer.package_id}.tar.gz",
+        )
+    assert '404' in str(err)
 
 
 def test_cleanup_failed_job():
@@ -234,66 +235,47 @@ def test_cleanup_failed_job():
 
 @mock_aws
 @patch('src.discover_packages.get_client_with_role')
-def test_deliver_start_notification(mock_role):
-    """Asserts success messages are delivered as expected."""
-    sns = boto3.client('sns', region_name='us-east-1')
-    mock_role.return_value = sns
-    topic_arn = sns.create_topic(Name='my-topic')['TopicArn']
-    sqs_conn = boto3.resource("sqs", region_name="us-east-1")
-    sqs_conn.create_queue(QueueName="test-queue")
-    sns.subscribe(
-        TopicArn=topic_arn,
-        Protocol="sqs",
-        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:test-queue",
-    )
-
-    default_args = ARGS
-    default_args[5] = topic_arn
-    discoverer = PackageDiscoverer(*default_args)
-
-    discoverer.deliver_start_notification()
-
-    queue = sqs_conn.get_queue_by_name(QueueName="test-queue")
-    messages = queue.receive_messages(MaxNumberOfMessages=1)
-    message_body = json.loads(messages[0].body)
-    assert message_body['MessageAttributes']['outcome']['Value'] == 'STARTED'
-    assert message_body['MessageAttributes']['package_id']['Value'] == discoverer.package_id
-    assert message_body['MessageAttributes']['service']['Value'] == discoverer.service_name
-
-
-@mock_aws
-@patch('src.discover_packages.get_client_with_role')
 def test_deliver_success_notification(mock_role):
     """Asserts success messages are delivered as expected."""
     sns = boto3.client('sns', region_name='us-east-1')
     mock_role.return_value = sns
-    topic_arn = sns.create_topic(Name='my-topic')['TopicArn']
+    topic_arn = sns.create_topic(
+        Name='my-topic.fifo',
+        Attributes={
+            "FifoTopic": "true",
+            "ContentBasedDeduplication": "true"
+        }
+    )['TopicArn']
     sqs_conn = boto3.resource("sqs", region_name="us-east-1")
-    sqs_conn.create_queue(QueueName="test-queue")
+    queue_name = "test-queue.fifo"
+    sqs_conn.create_queue(
+        QueueName=queue_name,
+        Attributes={
+            "FifoQueue": "true",
+            "ContentBasedDeduplication": "true"
+        }
+    )
     sns.subscribe(
         TopicArn=topic_arn,
         Protocol="sqs",
-        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:test-queue",
+        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:{queue_name}",
     )
 
     default_args = ARGS
-    default_args[5] = topic_arn
+    default_args[4] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
 
-    package_path = f"/tmp/{default_args[0]}"
     package_data = {}
-    discoverer.deliver_success_notification(package_path, package_data)
+    discoverer.deliver_success_notification(package_data)
 
-    queue = sqs_conn.get_queue_by_name(QueueName="test-queue")
+    queue = sqs_conn.get_queue_by_name(QueueName=queue_name)
     messages = queue.receive_messages(MaxNumberOfMessages=1)
     message_body = json.loads(messages[0].body)
+    assert message_body['Message'] == json.dumps(package_data)
     assert message_body['MessageAttributes']['outcome']['Value'] == 'SUCCESS'
     assert message_body['MessageAttributes']['package_id']['Value'] == discoverer.package_id
     assert message_body['MessageAttributes']['service']['Value'] == discoverer.service_name
-
-    json_data = json.loads(message_body['MessageAttributes']['package_data']['Value'])
-    assert isinstance(json_data, dict)
-    assert json_data['package_path'] == package_path
+    assert message_body['MessageAttributes']['message']['Value'] == f'Package {discoverer.package_id} successfully discovered.'
 
 
 @mock_aws
@@ -303,17 +285,30 @@ def test_deliver_failure_notification(mock_traceback, mock_role):
     """Asserts failure messages are delivered as expected."""
     sns = boto3.client('sns', region_name='us-east-1')
     mock_role.return_value = sns
-    topic_arn = sns.create_topic(Name='my-topic')['TopicArn']
+    topic_arn = sns.create_topic(
+        Name='my-topic.fifo',
+        Attributes={
+            "FifoTopic": "true",
+            "ContentBasedDeduplication": "true"
+        }
+    )['TopicArn']
     sqs_conn = boto3.resource("sqs", region_name="us-east-1")
-    sqs_conn.create_queue(QueueName="test-queue")
+    queue_name = "test-queue.fifo"
+    sqs_conn.create_queue(
+        QueueName=queue_name,
+        Attributes={
+            "FifoQueue": "true",
+            "ContentBasedDeduplication": "true"
+        }
+    )
     sns.subscribe(
         TopicArn=topic_arn,
         Protocol="sqs",
-        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:test-queue",
+        Endpoint=f"arn:aws:sqs:us-east-1:{DEFAULT_ACCOUNT_ID}:{queue_name}",
     )
 
     default_args = ARGS
-    default_args[5] = topic_arn
+    default_args[4] = topic_arn
     discoverer = PackageDiscoverer(*default_args)
     exception_message = "foo"
     exception = Exception(exception_message)
@@ -321,10 +316,10 @@ def test_deliver_failure_notification(mock_traceback, mock_role):
 
     discoverer.deliver_failure_notification(exception)
 
-    queue = sqs_conn.get_queue_by_name(QueueName="test-queue")
+    queue = sqs_conn.get_queue_by_name(QueueName=queue_name)
     messages = queue.receive_messages(MaxNumberOfMessages=1)
     message_body = json.loads(messages[0].body)
+    assert message_body['Message'] == "baz"
     assert message_body['MessageAttributes']['outcome']['Value'] == 'FAILURE'
     assert message_body['MessageAttributes']['package_id']['Value'] == discoverer.package_id
     assert exception_message in message_body['MessageAttributes']['message']['Value']
-    assert message_body['MessageAttributes']['traceback']['Value'] == 'baz'
