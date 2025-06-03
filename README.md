@@ -13,6 +13,19 @@ docker build -t digital_ingest_discovery .
 docker run digital_ingest_discovery
 ```
 
+## Service Flow
+
+The service processes packages as follows:
+- Downloads package from S3 bucket.
+- Unzips package, validates BagIt bag structure and copies metadata
+- If the package comes from the `digitization` source, delivers it to the [IIIF Pipeline](https://github.com/RockefellerArchiveCenter/pictor/)
+- Removes temporary files created during processing.
+- Sends an SNS message about successful job.
+
+If errors are encountered during any of the above steps, the service:
+- Removes temporary and destination files if they exist.
+- Sends a failure message to SNS topic.
+
 ## Usage
 
 This repository is intended to be deployed as an ECS Task in AWS infrastructure.
