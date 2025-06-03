@@ -17,7 +17,7 @@ docker run digital_ingest_discovery
 
 The service processes packages as follows:
 - Downloads package from S3 bucket.
-- Unzips package, validates BagIt bag structure and copies metadata
+- Unzips package, validates BagIt bag structure and restructures metadata
 - If the package comes from the `digitization` source, delivers it to the [IIIF Pipeline](https://github.com/RockefellerArchiveCenter/pictor/)
 - Removes temporary files created during processing.
 - Sends an SNS message about successful job.
