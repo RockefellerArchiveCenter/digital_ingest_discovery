@@ -275,7 +275,7 @@ def test_deliver_success_notification(mock_role):
     assert message_body['MessageAttributes']['outcome']['Value'] == 'SUCCESS'
     assert message_body['MessageAttributes']['package_id']['Value'] == discoverer.package_id
     assert message_body['MessageAttributes']['service']['Value'] == discoverer.service_name
-    assert message_body['MessageAttributes']['message']['Value'] == f'Package {discoverer.package_id} successfully discovered.'
+    assert message_body['MessageAttributes']['message']['Value'] == 'Package successfully discovered and downloaded.'
 
 
 @mock_aws
