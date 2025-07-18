@@ -178,7 +178,7 @@ class PackageDiscoverer(object):
                 },
                 'message': {
                     'DataType': 'String',
-                    'StringValue': f'Package {self.package_id} successfully discovered.',
+                    'StringValue': 'Package successfully discovered and downloaded.',
                 },
             })
         logging.debug('Success notification delivered.')
