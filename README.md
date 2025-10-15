@@ -4,11 +4,12 @@ A microservice to discover packages.
 
 ## Getting Started
 
-If you have [git](https://git-scm.com/) and [Docker](https://www.docker.com/community-edition) installed, using this repository is as simple as:
+If you have [git](https://git-scm.com/) and [Docker](https://www.docker.com/community-edition) installed, you can run the application using:
 
 ```
 git clone https://github.com/RockefellerArchiveCenter/digital_ingest_discovery.git
 cd digital_ingest_discovery
+git submodule update --init
 docker build -t digital_ingest_discovery .
 docker run digital_ingest_discovery
 ```
