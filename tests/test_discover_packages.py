@@ -1,4 +1,6 @@
+import io
 import json
+import tarfile
 from pathlib import Path
 from shutil import copy
 from unittest.mock import patch
@@ -18,8 +20,8 @@ ARGS = [
     'digital-ingest-discovery-dev-sns-role-arn',  # sns_role_arn
     'topic',  # sns_topic
     'digital-ingest-upload',  # source_bucket
-    '/storage',  # storage_dir
-    '/tmp',  # tmp_dir
+    'rac-dev-digital-ingest-assembly',  # assembly bucket
+    '/tmp',  # ebs mount path
 ]
 
 
@@ -32,8 +34,8 @@ def test_init():
     assert discoverer.sns_role_arn == 'digital-ingest-discovery-dev-sns-role-arn'
     assert discoverer.sns_topic == 'topic'
     assert discoverer.source_bucket == 'digital-ingest-upload'
-    assert discoverer.storage_dir == '/storage'
-    assert discoverer.tmp_dir == '/tmp'
+    assert discoverer.assembly_bucket == 'rac-dev-digital-ingest-assembly'
+    assert discoverer.ebs_path == '/tmp'
 
     invalid_args = [
         'f78742e5-6af9-4756-a94a-6cd297406d50',
@@ -49,30 +51,32 @@ def test_init():
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
 @patch('src.discover_packages.PackageDiscoverer.deliver_to_iiif_pipeline')
+@patch('src.discover_packages.PackageDiscoverer.get_fileobj_size')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
-@patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
 def test_run_born_digital(
         mock_failure_notification,
-        mock_failed_cleanup,
         mock_success_notification,
         mock_success_cleanup,
+        mock_fileobj_size,
         mock_deliver,
         mock_unpack,
         mock_download):
     """Ensures born digital packages trigger the correct methods and arguments."""
     discoverer = PackageDiscoverer(*ARGS)
-    download_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
-    storage_path = Path(discoverer.storage_dir, discoverer.package_id)
-
+    download_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
     package_data = {"origin": "aurora"}
-    mock_unpack.return_value = storage_path, package_data
+    mock_unpack.return_value = io.BytesIO(), package_data
+    package_size = 12345
+    mock_fileobj_size.return_value = package_size
+
     discoverer.run()
+
     mock_failure_notification.assert_not_called()
-    mock_failed_cleanup.assert_not_called()
-    mock_success_notification.assert_called_once_with(package_data)
-    mock_success_cleanup.assert_called_once_with(download_path)
+    mock_success_notification.assert_called_once_with(package_data, package_size)
+    mock_success_cleanup.assert_called_once_with()
+    mock_fileobj_size.assert_called_once()
     mock_deliver.assert_not_called()
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
@@ -81,51 +85,48 @@ def test_run_born_digital(
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
 @patch('src.discover_packages.PackageDiscoverer.deliver_to_iiif_pipeline')
+@patch('src.discover_packages.PackageDiscoverer.get_fileobj_size')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
-@patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
 def test_run_digitized(
         mock_failure_notification,
-        mock_failed_cleanup,
         mock_success_notification,
         mock_success_cleanup,
+        mock_fileobj_size,
         mock_deliver,
         mock_unpack,
         mock_download):
     """Ensures digitized packages trigger the correct methods and arguments."""
     discoverer = PackageDiscoverer(*ARGS)
-    download_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
-    storage_path = Path(discoverer.storage_dir, discoverer.package_id)
-
-    # Happy path, digitized content
+    download_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
     package_data = {"origin": "digitization"}
-    mock_unpack.return_value = storage_path, package_data
+    mock_unpack.return_value = io.BytesIO(), package_data
+    package_size = 12345
+    mock_fileobj_size.return_value = package_size
+
     discoverer.run()
+
     mock_failure_notification.assert_not_called()
-    mock_failed_cleanup.assert_not_called()
-    mock_success_notification.assert_called_once_with(package_data)
-    mock_success_cleanup.assert_called_once_with(download_path)
-    mock_deliver.assert_called_once_with(storage_path)
+    mock_success_notification.assert_called_once_with(package_data, package_size)
+    mock_success_cleanup.assert_called_once_with()
+    mock_fileobj_size.assert_called_once()
+    mock_deliver.assert_called_once()
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
 
 
 @patch('src.discover_packages.PackageDiscoverer.download')
-@patch('src.discover_packages.PackageDiscoverer.cleanup_failed_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
 def test_run_exception(
         mock_failure_notification,
-        mock_failed_cleanup,
         mock_download):
     """Ensures exceptions are handled correctly."""
     discoverer = PackageDiscoverer(*ARGS)
     exception = Exception("Invalid refid.")
     mock_download.side_effect = exception
-    download_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
     discoverer.run()
     mock_failure_notification.assert_called_once_with(exception)
-    mock_failed_cleanup.assert_called_once_with(download_path)
 
 
 @mock_aws
@@ -139,12 +140,13 @@ def test_download(mock_role):
         Bucket=discoverer.source_bucket,
         Key=f"{discoverer.package_id}.tar.gz",
         Body='')
-    download_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
+    download_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
 
     discoverer.download(download_path)
     download_path.is_file()
 
 
+@mock_aws
 def test_unpack():
     """Tests unpacking for both aurora and digitization package."""
     discoverer = PackageDiscoverer(*ARGS)
@@ -155,16 +157,18 @@ def test_unpack():
             "fixtures",
             "bags",
             f"{identifier}.tar.gz")
-        tmp_path = Path(discoverer.tmp_dir, f"{discoverer.package_id}.tar.gz")
+        tmp_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
         copy(fixture_path, tmp_path)
+        s3 = boto3.client('s3', region_name='us-east-1')
+        s3.create_bucket(Bucket=discoverer.assembly_bucket)
 
-        package_path, package_data = discoverer.unpack(tmp_path)
+        package_fileobj, package_data = discoverer.unpack(tmp_path)
 
-        assert package_path == Path(discoverer.storage_dir, f"{discoverer.package_id}.tar.gz")
-        assert package_path.is_file()
+        assert isinstance(package_fileobj, tarfile.ExFileObject)
         with open(Path("tests", "fixtures", "json", f"{identifier}.json"), "r") as df:
             expected_data = json.load(df)
             assert package_data == expected_data
+        assert s3.head_object(Bucket=discoverer.assembly_bucket, Key=f"{discoverer.package_id}.tar.gz")
 
 
 @mock_aws
@@ -176,16 +180,26 @@ def test_deliver_to_iiif_pipeline():
         "fixtures",
         "bags",
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
-    storage_path = Path(discoverer.storage_dir, f"{discoverer.package_id}.tar.gz")
-    copy(fixture_path, storage_path)
     s3 = boto3.client('s3', region_name='us-east-1')
     s3.create_bucket(Bucket=discoverer.iiif_bucket)
+    with open(fixture_path, 'rb') as fileobj:
+        discoverer.deliver_to_iiif_pipeline(fileobj)
 
-    discoverer.deliver_to_iiif_pipeline(storage_path)
-
-    assert s3.get_object(
+    assert s3.head_object(
         Bucket=discoverer.iiif_bucket,
         Key=f"{discoverer.package_id}.tar.gz")
+
+
+def test_get_fileobj_size():
+    fixture_path = fixture_path = Path(
+        "tests",
+        "fixtures",
+        "bags",
+        "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
+    discoverer = PackageDiscoverer(*ARGS)
+    with open(fixture_path, 'rb') as fileobj:
+        package_size = discoverer.get_fileobj_size(fileobj)
+    assert package_size == 17616
 
 
 @mock_aws
@@ -200,37 +214,14 @@ def test_cleanup_successful_job(mock_role):
         Bucket=discoverer.source_bucket,
         Key=f"{discoverer.package_id}.tar.gz",
         Body='')
-    fixture_path = Path(
-        "tests",
-        "fixtures",
-        "bags",
-        "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
-    tmp_path = Path(discoverer.tmp_dir, discoverer.package_id)
-    copy(fixture_path, tmp_path)
 
-    discoverer.cleanup_successful_job(tmp_path)
+    discoverer.cleanup_successful_job()
 
-    assert not tmp_path.is_dir()
     with pytest.raises(ClientError) as err:
         s3.head_object(
             Bucket=discoverer.source_bucket,
-            Key=f"{discoverer.package_id}.tar.gz",
-        )
+            Key=f"{discoverer.package_id}.tar.gz",)
     assert '404' in str(err)
-
-
-def test_cleanup_failed_job():
-    """Ensures file are cleaned up as expected."""
-    discoverer = PackageDiscoverer(*ARGS)
-    fixture_path = Path(
-        "tests",
-        "fixtures",
-        "bags",
-        "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
-    tmp_path = Path(discoverer.tmp_dir, discoverer.package_id)
-    copy(fixture_path, tmp_path)
-    discoverer.cleanup_failed_job(tmp_path)
-    assert not tmp_path.is_dir()
 
 
 @mock_aws
@@ -266,7 +257,8 @@ def test_deliver_success_notification(mock_role):
     discoverer = PackageDiscoverer(*default_args)
 
     package_data = {}
-    discoverer.deliver_success_notification(package_data)
+    package_size = 12345
+    discoverer.deliver_success_notification(package_data, package_size)
 
     queue = sqs_conn.get_queue_by_name(QueueName=queue_name)
     messages = queue.receive_messages(MaxNumberOfMessages=1)
@@ -276,6 +268,7 @@ def test_deliver_success_notification(mock_role):
     assert message_body['MessageAttributes']['package_id']['Value'] == discoverer.package_id
     assert message_body['MessageAttributes']['service']['Value'] == discoverer.service_name
     assert message_body['MessageAttributes']['message']['Value'] == 'Package successfully discovered and downloaded.'
+    assert message_body['MessageAttributes']['size']['Value'] == str(package_size)
 
 
 @mock_aws
