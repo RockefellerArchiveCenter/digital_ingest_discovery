@@ -102,9 +102,8 @@ class PackageDiscoverer(object):
                 package_data['title'] = package_data['metadata']['title']
 
             """Extract and save nested package binary as .tar.gz"""
-            extracted_dir = 'extracted'
-            extracted_path = f"{extracted_dir}/{self.package_id}/{self.package_id}.tar.gz"
-            outer_tar.extract(f"{self.package_id}/{self.package_id}.tar.gz", path=extracted_dir)
+            extracted_path = str(Path(self.ebs_path, self.package_id, f"{self.package_id}.tar.gz"))
+            outer_tar.extract(f"{self.package_id}/{self.package_id}.tar.gz", path=self.ebs_path)
             s3_client = get_client_with_role('s3', self.s3_role_arn)
             s3_client.upload_file(
                 extracted_path,
