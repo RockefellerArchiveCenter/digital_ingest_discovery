@@ -41,10 +41,10 @@ class PackageDiscoverer(object):
         try:
             downloaded_path = Path(self.ebs_path, f"{self.package_id}.tar.gz")
             self.download(downloaded_path)
-            package_fileobj, package_data = self.unpack(downloaded_path)
+            package_filepath, package_data = self.unpack(downloaded_path)
             if package_data.get('origin') == 'digitization':
-                self.deliver_to_iiif_pipeline(package_fileobj)
-            package_size = self.get_fileobj_size(package_fileobj)
+                self.deliver_to_iiif_pipeline(package_filepath)
+            package_size = self.get_package_size(package_filepath)
             self.cleanup_successful_job()
             self.deliver_success_notification(package_data, package_size)
             logging.info(
@@ -102,32 +102,35 @@ class PackageDiscoverer(object):
                 package_data['title'] = package_data['metadata']['title']
 
             """Extract and save nested package binary as .tar.gz"""
-            inner_tar_data = outer_tar.extractfile(f"{self.package_id}/{self.package_id}.tar.gz")
+            extracted_dir = 'extracted'
+            extracted_path = f"{extracted_dir}/{self.package_id}/{self.package_id}.tar.gz"
+            outer_tar.extract(f"{self.package_id}/{self.package_id}.tar.gz", path=extracted_dir)
             s3_client = get_client_with_role('s3', self.s3_role_arn)
-            s3_client.upload_fileobj(
-                inner_tar_data,
+            s3_client.upload_file(
+                extracted_path,
                 self.assembly_bucket,
                 f"{self.package_id}.tar.gz",
                 ExtraArgs={'ContentType': 'application/gzip'})
-        return inner_tar_data, package_data
+        return extracted_path, package_data
 
-    def deliver_to_iiif_pipeline(self, package_fileobj):
+    def deliver_to_iiif_pipeline(self, package_filepath):
         """Deliver package to digitization services.
 
         Args:
-            package_fileobj (tarfile.ExFileObject): File object of package to upload.
+            package_filepath (str): Filepath of package to upload.
         """
         s3_client = get_client_with_role('s3', self.s3_role_arn)
-        s3_client.upload_fileobj(
-            package_fileobj,
+        s3_client.upload_file(
+            package_filepath,
             self.iiif_bucket,
             f"{self.package_id}.tar.gz",
             ExtraArgs={'ContentType': 'application/gzip'})
         logging.debug(f'{self.package_id}.tar.gz uploaded to bucket {self.iiif_bucket}.')
 
-    def get_fileobj_size(self, fileobj):
-        fileobj.seek(0, os.SEEK_END)
-        return fileobj.tell()
+    def get_package_size(self, package_filepath):
+        with open(package_filepath, 'rb') as f:
+            f.seek(0, os.SEEK_END)
+            return f.tell()
 
     def cleanup_successful_job(self):
         """Remove temporary files created during processing."""

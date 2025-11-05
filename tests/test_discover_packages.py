@@ -1,6 +1,5 @@
 import io
 import json
-import tarfile
 from pathlib import Path
 from shutil import copy
 from unittest.mock import patch
@@ -51,7 +50,7 @@ def test_init():
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
 @patch('src.discover_packages.PackageDiscoverer.deliver_to_iiif_pipeline')
-@patch('src.discover_packages.PackageDiscoverer.get_fileobj_size')
+@patch('src.discover_packages.PackageDiscoverer.get_package_size')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
@@ -59,7 +58,7 @@ def test_run_born_digital(
         mock_failure_notification,
         mock_success_notification,
         mock_success_cleanup,
-        mock_fileobj_size,
+        mock_package_size,
         mock_deliver,
         mock_unpack,
         mock_download):
@@ -69,14 +68,14 @@ def test_run_born_digital(
     package_data = {"origin": "aurora"}
     mock_unpack.return_value = io.BytesIO(), package_data
     package_size = 12345
-    mock_fileobj_size.return_value = package_size
+    mock_package_size.return_value = package_size
 
     discoverer.run()
 
     mock_failure_notification.assert_not_called()
     mock_success_notification.assert_called_once_with(package_data, package_size)
     mock_success_cleanup.assert_called_once_with()
-    mock_fileobj_size.assert_called_once()
+    mock_package_size.assert_called_once()
     mock_deliver.assert_not_called()
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
@@ -85,7 +84,7 @@ def test_run_born_digital(
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.unpack')
 @patch('src.discover_packages.PackageDiscoverer.deliver_to_iiif_pipeline')
-@patch('src.discover_packages.PackageDiscoverer.get_fileobj_size')
+@patch('src.discover_packages.PackageDiscoverer.get_package_size')
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
@@ -93,7 +92,7 @@ def test_run_digitized(
         mock_failure_notification,
         mock_success_notification,
         mock_success_cleanup,
-        mock_fileobj_size,
+        mock_package_size,
         mock_deliver,
         mock_unpack,
         mock_download):
@@ -103,14 +102,14 @@ def test_run_digitized(
     package_data = {"origin": "digitization"}
     mock_unpack.return_value = io.BytesIO(), package_data
     package_size = 12345
-    mock_fileobj_size.return_value = package_size
+    mock_package_size.return_value = package_size
 
     discoverer.run()
 
     mock_failure_notification.assert_not_called()
     mock_success_notification.assert_called_once_with(package_data, package_size)
     mock_success_cleanup.assert_called_once_with()
-    mock_fileobj_size.assert_called_once()
+    mock_package_size.assert_called_once()
     mock_deliver.assert_called_once()
     mock_unpack.assert_called_once_with(download_path)
     mock_download.assert_called_once_with(download_path)
@@ -162,9 +161,9 @@ def test_unpack():
         s3 = boto3.client('s3', region_name='us-east-1')
         s3.create_bucket(Bucket=discoverer.assembly_bucket)
 
-        package_fileobj, package_data = discoverer.unpack(tmp_path)
+        package_filepath, package_data = discoverer.unpack(tmp_path)
 
-        assert isinstance(package_fileobj, tarfile.ExFileObject)
+        assert isinstance(package_filepath, str)
         with open(Path("tests", "fixtures", "json", f"{identifier}.json"), "r") as df:
             expected_data = json.load(df)
             assert package_data == expected_data
@@ -182,23 +181,21 @@ def test_deliver_to_iiif_pipeline():
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     s3 = boto3.client('s3', region_name='us-east-1')
     s3.create_bucket(Bucket=discoverer.iiif_bucket)
-    with open(fixture_path, 'rb') as fileobj:
-        discoverer.deliver_to_iiif_pipeline(fileobj)
+    discoverer.deliver_to_iiif_pipeline(fixture_path)
 
     assert s3.head_object(
         Bucket=discoverer.iiif_bucket,
         Key=f"{discoverer.package_id}.tar.gz")
 
 
-def test_get_fileobj_size():
+def test_get_package_size():
     fixture_path = fixture_path = Path(
         "tests",
         "fixtures",
         "bags",
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     discoverer = PackageDiscoverer(*ARGS)
-    with open(fixture_path, 'rb') as fileobj:
-        package_size = discoverer.get_fileobj_size(fileobj)
+    package_size = discoverer.get_package_size(fixture_path)
     assert package_size == 17616
 
 
