@@ -4,7 +4,6 @@ import os
 import tarfile
 import traceback
 from pathlib import Path
-from shutil import copyfileobj
 
 import rac_schema_validator
 
@@ -24,8 +23,8 @@ class PackageDiscoverer(object):
                  sns_role_arn,
                  sns_topic,
                  source_bucket,
-                 storage_dir,
-                 tmp_dir):
+                 assembly_bucket,
+                 ebs_path):
         self.package_id = package_id
         self.iiif_bucket = iiif_bucket
         self.s3_role_arn = s3_role_arn
@@ -33,27 +32,25 @@ class PackageDiscoverer(object):
         self.sns_role_arn = sns_role_arn
         self.sns_topic = sns_topic
         self.source_bucket = source_bucket
-        self.storage_dir = storage_dir
-        self.tmp_dir = tmp_dir
-        for fp in [self.storage_dir, self.tmp_dir]:
-            Path(fp).mkdir(exist_ok=True)
+        self.assembly_bucket = assembly_bucket
+        self.ebs_path = ebs_path
 
     def run(self):
         logging.debug(
             f'Discovery started for package {self.package_id}.')
         try:
-            downloaded_path = Path(self.tmp_dir, f"{self.package_id}.tar.gz")
+            downloaded_path = Path(self.ebs_path, f"{self.package_id}.tar.gz")
             self.download(downloaded_path)
-            package_path, package_data = self.unpack(downloaded_path)
+            package_filepath, package_data = self.unpack(downloaded_path)
             if package_data.get('origin') == 'digitization':
-                self.deliver_to_iiif_pipeline(package_path)
-            self.cleanup_successful_job(downloaded_path)
-            self.deliver_success_notification(package_data)
+                self.deliver_to_iiif_pipeline(package_filepath)
+            package_size = self.get_package_size(package_filepath)
+            self.cleanup_successful_job()
+            self.deliver_success_notification(package_data, package_size)
             logging.info(
                 f'Package {self.package_id} successfully discovered.')
         except Exception as e:
             logging.exception(e)
-            self.cleanup_failed_job(downloaded_path)  # TODO should this also include the storage path?
             self.deliver_failure_notification(e)
 
     def download(self, download_path):
@@ -105,52 +102,44 @@ class PackageDiscoverer(object):
                 package_data['title'] = package_data['metadata']['title']
 
             """Extract and save nested package binary as .tar.gz"""
-            inner_tar_data = outer_tar.extractfile(f"{self.package_id}/{self.package_id}.tar.gz")
-            storage_path = Path(self.storage_dir, f"{self.package_id}.tar.gz")
-            with open(storage_path, "wb") as package_binary:
-                copyfileobj(inner_tar_data, package_binary)
+            extracted_path = str(Path(self.ebs_path, self.package_id, f"{self.package_id}.tar.gz"))
+            outer_tar.extract(f"{self.package_id}/{self.package_id}.tar.gz", path=self.ebs_path)
+            s3_client = get_client_with_role('s3', self.s3_role_arn)
+            s3_client.upload_file(
+                extracted_path,
+                self.assembly_bucket,
+                f"{self.package_id}.tar.gz",
+                ExtraArgs={'ContentType': 'application/gzip'})
+        return extracted_path, package_data
 
-        logging.debug(f'Package unpacked to {self.storage_dir}.')
-        return storage_path, package_data
-
-    def deliver_to_iiif_pipeline(self, package_path):
+    def deliver_to_iiif_pipeline(self, package_filepath):
         """Deliver package to digitization services.
 
         Args:
-            package_path (pathlib.Path): location of the package binary
+            package_filepath (str): Filepath of package to upload.
         """
         s3_client = get_client_with_role('s3', self.s3_role_arn)
         s3_client.upload_file(
-            package_path,
+            package_filepath,
             self.iiif_bucket,
-            package_path.name,
+            f"{self.package_id}.tar.gz",
             ExtraArgs={'ContentType': 'application/gzip'})
-        logging.debug(f'{package_path.name} uploaded to bucket {self.iiif_bucket}.')
+        logging.debug(f'{self.package_id}.tar.gz uploaded to bucket {self.iiif_bucket}.')
 
-    def cleanup_successful_job(self, downloaded_path):
-        """Remove temporary files created during processing.
+    def get_package_size(self, package_filepath):
+        with open(package_filepath, 'rb') as f:
+            f.seek(0, os.SEEK_END)
+            return f.tell()
 
-        Args:
-            downloaded_path (pathlib.Path): location of downloaded package binary
-        """
+    def cleanup_successful_job(self):
+        """Remove temporary files created during processing."""
         s3_client = get_client_with_role('s3', self.s3_role_arn)
         s3_client.delete_object(
             Bucket=self.source_bucket,
             Key=f"{self.package_id}.tar.gz")
-        downloaded_path.unlink(missing_ok=True)
         logging.debug('Cleanup from successful job completed.')
 
-    def cleanup_failed_job(self, downloaded_path):
-        """Remove all files created during processing.
-
-        Args:
-            downloaded_path (pathlib.Path): location of downloaded package binary
-            package_path (pathlib.Path): location of the package binary
-        """
-        downloaded_path.unlink(missing_ok=True)
-        logging.debug('Cleanup from failed job completed.')
-
-    def deliver_success_notification(self, package_data):
+    def deliver_success_notification(self, package_data, package_size):
         """Send SNS message about successful job.
 
         Args:
@@ -167,6 +156,10 @@ class PackageDiscoverer(object):
                 'package_id': {
                     'DataType': 'String',
                     'StringValue': self.package_id,
+                },
+                'size': {
+                    'DataType': 'String',
+                    'StringValue': str(package_size),
                 },
                 'service': {
                     'DataType': 'String',
@@ -226,8 +219,8 @@ if __name__ == '__main__':
     sns_role_arn = os.environ.get('AWS_SNS_ROLE_ARN')
     sns_topic = os.environ.get('AWS_SNS_TOPIC')
     source_bucket = os.environ.get('AWS_SOURCE_BUCKET')
-    storage_dir = os.environ.get('STORAGE_DIR')
-    tmp_dir = os.environ.get('TMP_DIR')
+    assembly_bucket = os.environ.get('AWS_ASSEMBLY_BUCKET')
+    ebs_path = os.environ.get('EBS_PATH')
 
     PackageDiscoverer(
         package_id,
@@ -236,6 +229,6 @@ if __name__ == '__main__':
         sns_role_arn,
         sns_topic,
         source_bucket,
-        storage_dir,
-        tmp_dir
+        assembly_bucket,
+        ebs_path
     ).run()
