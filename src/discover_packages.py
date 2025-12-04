@@ -87,12 +87,16 @@ class PackageDiscoverer(object):
                 raise Exception(
                     f"Invalid package data: {e} \n{package_data}")
 
+            """Move ArchivesSpace URI to identifiers"""
+            as_uri = package_data.get('archivesspace_identifier')
+            if not package_data.get('identifiers'):
+                package_data['identifiers'] = {}
+            package_data['identifiers'].update({'archivesspace_archival_object': as_uri})
+
             """Move Aurora package URL (if it exists) to identifiers"""
             if package_data.get('origin', 'aurora') == 'aurora':
                 try:
                     aurora_url = package_data.pop('url')
-                    if not package_data.get('identifiers'):
-                        package_data['identifiers'] = {}
                     package_data['identifiers'].update({'aurora_package': aurora_url})
                 except KeyError:
                     pass
