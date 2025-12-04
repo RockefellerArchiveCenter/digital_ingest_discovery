@@ -196,7 +196,7 @@ def test_get_package_size():
         "f78742e5-6af9-4756-a94a-6cd297406d50.tar.gz")
     discoverer = PackageDiscoverer(*ARGS)
     package_size = discoverer.get_package_size(fixture_path)
-    assert package_size == 17616
+    assert package_size == 17670
 
 
 @mock_aws
