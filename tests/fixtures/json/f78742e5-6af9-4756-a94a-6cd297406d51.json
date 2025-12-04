@@ -142,5 +142,8 @@
     "created_time": "2019-08-27T07:54:37.952659-04:00",
     "modified_time": "2020-06-04T11:06:12.832484-04:00",
     "identifiers": {
-        "aurora_package": "https://aurora.rockarch.org/api/transfers/19/"}
+        "aurora_package": "https://aurora.rockarch.org/api/transfers/19/", 
+        "archivesspace_archival_object": "/repositories/2/archival_objects/1150893",
+        "dimes_object": "GdHEBKuZWWta5qeo4xfcQ3"
+    }
 }
