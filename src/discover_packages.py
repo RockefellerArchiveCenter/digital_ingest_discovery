@@ -6,6 +6,7 @@ import traceback
 from pathlib import Path
 
 import rac_schema_validator
+import shortuuid
 
 from src.helpers import get_client_with_role, validate_package_data
 
@@ -92,6 +93,9 @@ class PackageDiscoverer(object):
             if not package_data.get('identifiers'):
                 package_data['identifiers'] = {}
             package_data['identifiers'].update({'archivesspace_archival_object': as_uri})
+
+            """Add DIMES ID to identifiers"""
+            package_data['identifiers'].update({'dimes_object': shortuuid.uuid(name=as_uri)})
 
             """Move Aurora package URL (if it exists) to identifiers"""
             if package_data.get('origin', 'aurora') == 'aurora':
