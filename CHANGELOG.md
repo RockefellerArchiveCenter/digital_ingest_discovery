@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.0.0...v1.1.0) (2026-06-24)
+
+
+### Features
+
+* Adds ArchivesSpace ref ID to identifiers array ([ac98c8c](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/ac98c8ce35dd2b50827063e2f2176b2b88da5b17))
+* Adds AS ref ID to identifiers ([9afafe0](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/9afafe01916af87d881d42378fa0f36c5bce137c))
+
 ## 1.0.0 (2026-06-18)
 
 
