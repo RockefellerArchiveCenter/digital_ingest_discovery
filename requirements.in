@@ -1,3 +1,4 @@
+ArchivesSnake~=0.10
 aws_assume_role_lib~=2.10
 rac-schema-validator~=1.0
 requests~=2.27
