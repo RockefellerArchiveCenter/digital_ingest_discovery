@@ -27,10 +27,12 @@ ARGS = [
 ]
 
 
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_init(mock_as):
+def test_init(mock_as, mock_get):
     """Asserts Validator init method sets attributes correctly."""
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     discoverer = PackageDiscoverer(*ARGS)
     assert discoverer.package_id == 'f78742e5-6af9-4756-a94a-6cd297406d50'
     assert discoverer.iiif_bucket == 'rac-dev-iiif-upload'
@@ -62,9 +64,11 @@ def test_init(mock_as):
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
 def test_run_born_digital(
         mock_as_auth,
+        mock_get,
         mock_failure_notification,
         mock_success_notification,
         mock_success_cleanup,
@@ -74,6 +78,7 @@ def test_run_born_digital(
         mock_download):
     """Ensures born digital packages trigger the correct methods and arguments."""
     mock_as_auth.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     discoverer = PackageDiscoverer(*ARGS)
     download_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
     package_data = {"origin": "aurora"}
@@ -99,9 +104,11 @@ def test_run_born_digital(
 @patch('src.discover_packages.PackageDiscoverer.cleanup_successful_job')
 @patch('src.discover_packages.PackageDiscoverer.deliver_success_notification')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
 def test_run_digitized(
         mock_as_auth,
+        mock_get,
         mock_failure_notification,
         mock_success_notification,
         mock_success_cleanup,
@@ -111,6 +118,7 @@ def test_run_digitized(
         mock_download):
     """Ensures digitized packages trigger the correct methods and arguments."""
     mock_as_auth.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     discoverer = PackageDiscoverer(*ARGS)
     download_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
     package_data = {"origin": "digitization"}
@@ -131,13 +139,16 @@ def test_run_digitized(
 
 @patch('src.discover_packages.PackageDiscoverer.download')
 @patch('src.discover_packages.PackageDiscoverer.deliver_failure_notification')
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
 def test_run_exception(
         mock_as,
+        mock_get,
         mock_failure_notification,
         mock_download):
     """Ensures exceptions are handled correctly."""
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     discoverer = PackageDiscoverer(*ARGS)
     exception = Exception("Invalid refid.")
     mock_download.side_effect = exception
@@ -147,9 +158,11 @@ def test_run_exception(
 
 @mock_aws
 @patch('src.discover_packages.get_client_with_role')
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_download(mock_as, mock_role):
+def test_download(mock_as, mock_get, mock_role):
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     discoverer = PackageDiscoverer(*ARGS)
     s3 = boto3.client('s3', region_name='us-east-1')
     mock_role.return_value = s3
@@ -166,10 +179,12 @@ def test_download(mock_as, mock_role):
 
 @mock_aws
 @patch('src.discover_packages.PackageDiscoverer.get_as_ref_id')
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_unpack(mock_as, mock_refid):
+def test_unpack(mock_as, mock_get, mock_refid):
     """Tests unpacking for both aurora and digitization package."""
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     mock_refid.return_value = "123456"
     discoverer = PackageDiscoverer(*ARGS)
     for identifier in ["f78742e5-6af9-4756-a94a-6cd297406d50", "f78742e5-6af9-4756-a94a-6cd297406d51"]:
@@ -199,10 +214,12 @@ def test_unpack(mock_as, mock_refid):
 
 
 @mock_aws
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_deliver_to_iiif_pipeline(mock_as):
+def test_deliver_to_iiif_pipeline(mock_as, mock_get):
     """Tests binary is correctly moved and POST request is sent with correct data."""
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     discoverer = PackageDiscoverer(*ARGS)
     fixture_path = Path(
         "tests",
@@ -218,9 +235,11 @@ def test_deliver_to_iiif_pipeline(mock_as):
         Key=f"{discoverer.package_id}.tar.gz")
 
 
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_get_package_size(mock_as):
+def test_get_package_size(mock_as, mock_get):
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     fixture_path = fixture_path = Path(
         "tests",
         "fixtures",
@@ -233,10 +252,12 @@ def test_get_package_size(mock_as):
 
 @mock_aws
 @patch('src.discover_packages.get_client_with_role')
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_cleanup_successful_job(mock_as, mock_role):
+def test_cleanup_successful_job(mock_as, mock_get, mock_role):
     """Ensures file are cleaned up as expected."""
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     discoverer = PackageDiscoverer(*ARGS)
     s3 = boto3.client('s3', region_name='us-east-1')
     mock_role.return_value = s3
@@ -257,10 +278,12 @@ def test_cleanup_successful_job(mock_as, mock_role):
 
 @mock_aws
 @patch('src.discover_packages.get_client_with_role')
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_deliver_success_notification(mock_as, mock_role):
+def test_deliver_success_notification(mock_as, mock_get, mock_role):
     """Asserts success messages are delivered as expected."""
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     sns = boto3.client('sns', region_name='us-east-1')
     mock_role.return_value = sns
     topic_arn = sns.create_topic(
@@ -307,11 +330,13 @@ def test_deliver_success_notification(mock_as, mock_role):
 @mock_aws
 @patch('src.discover_packages.get_client_with_role')
 @patch('traceback.format_exception')
+@patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_deliver_failure_notification(mock_as, mock_traceback, mock_role):
+def test_deliver_failure_notification(mock_as, mock_get, mock_traceback, mock_role):
     """Asserts failure messages are delivered as expected."""
     sns = boto3.client('sns', region_name='us-east-1')
     mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
     mock_role.return_value = sns
     topic_arn = sns.create_topic(
         Name='my-topic.fifo',
