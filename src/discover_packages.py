@@ -7,6 +7,7 @@ from pathlib import Path
 
 import rac_schema_validator
 import shortuuid
+from asnake.aspace import ASpace
 
 from src.helpers import get_client_with_role, validate_package_data
 
@@ -19,6 +20,9 @@ class PackageDiscoverer(object):
 
     def __init__(self,
                  package_id,
+                 as_baseurl,
+                 as_username,
+                 as_password,
                  iiif_bucket,
                  s3_role_arn,
                  sns_role_arn,
@@ -35,6 +39,10 @@ class PackageDiscoverer(object):
         self.source_bucket = source_bucket
         self.assembly_bucket = assembly_bucket
         self.ebs_path = ebs_path
+        self.as_client = ASpace(
+            baseurl=as_baseurl,
+            username=as_username,
+            password=as_password).client
 
     def run(self):
         logging.debug(
@@ -94,6 +102,10 @@ class PackageDiscoverer(object):
                 package_data['identifiers'] = {}
             package_data['identifiers'].update({'archivesspace_archival_object': as_uri})
 
+            """Add ArchivesSpace Ref ID"""
+            as_ref_id = self.get_as_ref_id(as_uri)
+            package_data['identifiers'].update({'archivesspace_ref_id': as_ref_id})
+
             """Add DIMES ID to identifiers"""
             package_data['identifiers'].update({'dimes_object': shortuuid.uuid(name=as_uri)})
 
@@ -119,6 +131,11 @@ class PackageDiscoverer(object):
                 f"{self.package_id}.tar.gz",
                 ExtraArgs={'ContentType': 'application/gzip'})
         return extracted_path, package_data
+
+    def get_as_ref_id(self, as_uri):
+        """Get Ref ID from ArchivesSpace."""
+        obj = self.as_client.get(as_uri).json()
+        return obj['ref_id']
 
     def deliver_to_iiif_pipeline(self, package_filepath):
         """Deliver package to digitization services.
@@ -222,6 +239,9 @@ class PackageDiscoverer(object):
 
 if __name__ == '__main__':
     package_id = os.environ.get('PACKAGE_ID')
+    as_baseurl = os.environ.get('AS_BASEURL')
+    as_username = os.environ.get('AS_USERNAME')
+    as_password = os.environ.get('AS_PASSWORD')
     iiif_bucket = os.environ.get('AWS_IIIF_BUCKET')
     s3_role_arn = os.environ.get('AWS_S3_ROLE_ARN')
     sns_role_arn = os.environ.get('AWS_SNS_ROLE_ARN')
@@ -232,6 +252,9 @@ if __name__ == '__main__':
 
     PackageDiscoverer(
         package_id,
+        as_baseurl,
+        as_username,
+        as_password,
         iiif_bucket,
         s3_role_arn,
         sns_role_arn,

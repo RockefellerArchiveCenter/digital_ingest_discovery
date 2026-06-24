@@ -144,6 +144,7 @@
     "identifiers": {
         "aurora_package": "https://aurora.rockarch.org/api/transfers/19/", 
         "archivesspace_archival_object": "/repositories/2/archival_objects/1150893",
+        "archivesspace_ref_id": "123456",
         "dimes_object": "GdHEBKuZWWta5qeo4xfcQ3"
     }
 }
