@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.1](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.1.0...v1.1.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **deps:** Scheduled dependency updates ([18e3978](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/18e3978ce9deb5561ab535e8e80e5c69fe726bdd))
+* **deps:** Scheduled dependency updates ([b2911c9](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/b2911c9bbfa7d45910f72935e0f32c50e37d9ee7))
+* **deps:** Scheduled dependency updates ([b2911c9](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/b2911c9bbfa7d45910f72935e0f32c50e37d9ee7))
+* **deps:** Scheduled dependency updates ([f9165fd](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/f9165fd672b9f2ab2108a6eaa879dae07b19508e))
+
 ## [1.1.0](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.0.0...v1.1.0) (2026-06-24)
 
 
