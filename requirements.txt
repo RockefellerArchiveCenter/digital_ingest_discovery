@@ -9,9 +9,9 @@ aws-assume-role-lib==2.10.0
     # via -r requirements.in
 boltons==26.0.0
     # via archivessnake
-boto3==1.43.36
+boto3==1.43.38
     # via aws-assume-role-lib
-botocore==1.43.36
+botocore==1.43.38
     # via
     #   boto3
     #   s3transfer
@@ -47,7 +47,7 @@ requests==2.34.2
     # via
     #   -r requirements.in
     #   archivessnake
-rpds-py==2026.5.1
+rpds-py==2026.6.3
     # via
     #   jsonschema
     #   referencing
