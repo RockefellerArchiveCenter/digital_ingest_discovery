@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.2](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.1.1...v1.1.2) (2026-07-22)
+
+
+### Bug Fixes
+
+* Correctly handle packages from Aurora ([3dd2fd8](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/3dd2fd82f138d98ae34f5dd0a1eeec640a5902e7))
+* Handle packages from Aurora correctly ([79b444f](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/79b444f009c9a3f0798d52105eeaf847001b11a1))
+
 ## [1.1.1](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.1.0...v1.1.1) (2026-07-06)
 
 
