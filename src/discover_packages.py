@@ -98,21 +98,24 @@ class PackageDiscoverer(object):
 
             """Move ArchivesSpace URI to identifiers"""
             as_uri = package_data.get('archivesspace_identifier')
-            if not package_data.get('identifiers'):
-                package_data['identifiers'] = {}
-            package_data['identifiers'].update({'archivesspace_archival_object': as_uri})
+            if as_uri:
+                if not package_data.get('identifiers'):
+                    package_data['identifiers'] = {}
+                package_data['identifiers'].update({'archivesspace_archival_object': as_uri})
 
-            """Add ArchivesSpace Ref ID"""
-            as_ref_id = self.get_as_ref_id(as_uri)
-            package_data['identifiers'].update({'archivesspace_ref_id': as_ref_id})
+                """Add ArchivesSpace Ref ID"""
+                as_ref_id = self.get_as_ref_id(as_uri)
+                package_data['identifiers'].update({'archivesspace_ref_id': as_ref_id})
 
-            """Add DIMES ID to identifiers"""
-            package_data['identifiers'].update({'dimes_object': shortuuid.uuid(name=as_uri)})
+                """Add DIMES ID to identifiers"""
+                package_data['identifiers'].update({'dimes_object': shortuuid.uuid(name=as_uri)})
 
             """Move Aurora package URL (if it exists) to identifiers"""
             if package_data.get('origin', 'aurora') == 'aurora':
                 try:
                     aurora_url = package_data.pop('url')
+                    if not package_data.get('identifiers'):
+                        package_data['identifiers'] = {}
                     package_data['identifiers'].update({'aurora_package': aurora_url})
                 except KeyError:
                     pass
