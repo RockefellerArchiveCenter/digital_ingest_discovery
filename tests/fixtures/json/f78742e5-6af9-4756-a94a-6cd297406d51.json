@@ -7,7 +7,7 @@
     "process_status": 90,
     "file_size": "131216279",
     "file_type": "OTHER",
-    "appraisal_note": "",
+    "appraisal_note": null,
     "additional_error_info": null,
     "metadata": {
         "source_organization": "Ford Foundation",
@@ -137,14 +137,11 @@
             "endTime": "2019-08-27 11:54:37.956079+00:00"
         }
     ],
-    "archivesspace_identifier": "/repositories/2/archival_objects/1150893",
-    "archivesspace_parent_identifier": "/repositories/2/archival_objects/1150892",
+    "archivesspace_identifier": null,
+    "archivesspace_parent_identifier": null,
     "created_time": "2019-08-27T07:54:37.952659-04:00",
     "modified_time": "2020-06-04T11:06:12.832484-04:00",
     "identifiers": {
-        "aurora_package": "https://aurora.rockarch.org/api/transfers/19/", 
-        "archivesspace_archival_object": "/repositories/2/archival_objects/1150893",
-        "archivesspace_ref_id": "123456",
-        "dimes_object": "GdHEBKuZWWta5qeo4xfcQ3"
+        "aurora_package": "/api/transfers/19/"
     }
 }

@@ -2,7 +2,7 @@ import io
 import json
 from pathlib import Path
 from shutil import copy
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 import boto3
 import pytest
@@ -181,36 +181,65 @@ def test_download(mock_as, mock_get, mock_role):
 @patch('src.discover_packages.PackageDiscoverer.get_as_ref_id')
 @patch('asnake.client.ASnakeClient.get')
 @patch('asnake.client.ASnakeClient.authorize')
-def test_unpack(mock_as, mock_get, mock_refid):
-    """Tests unpacking for both aurora and digitization package."""
+def test_unpack_digitized(mock_as, mock_get, mock_refid):
+    """Tests unpacking digitization package."""
     mock_as.return_value = True
     mock_get.return_value.text = "v.4.2.0"
     mock_refid.return_value = "123456"
     discoverer = PackageDiscoverer(*ARGS)
-    for identifier in ["f78742e5-6af9-4756-a94a-6cd297406d50", "f78742e5-6af9-4756-a94a-6cd297406d51"]:
-        discoverer.package_id = identifier
-        fixture_path = Path(
-            "tests",
-            "fixtures",
-            "bags",
-            f"{identifier}.tar.gz")
-        tmp_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
-        copy(fixture_path, tmp_path)
-        s3 = boto3.client('s3', region_name='us-east-1')
-        s3.create_bucket(Bucket=discoverer.assembly_bucket)
+    identifier = "f78742e5-6af9-4756-a94a-6cd297406d50"
+    discoverer.package_id = identifier
+    fixture_path = Path(
+        "tests",
+        "fixtures",
+        "bags",
+        f"{identifier}.tar.gz")
+    tmp_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
+    copy(fixture_path, tmp_path)
+    s3 = boto3.client('s3', region_name='us-east-1')
+    s3.create_bucket(Bucket=discoverer.assembly_bucket)
 
-        package_filepath, package_data = discoverer.unpack(tmp_path)
+    package_filepath, package_data = discoverer.unpack(tmp_path)
 
-        assert isinstance(package_filepath, str)
-        with open(Path("tests", "fixtures", "json", f"{identifier}.json"), "r") as df:
-            expected_data = json.load(df)
-            assert package_data == expected_data
-        assert s3.head_object(Bucket=discoverer.assembly_bucket, Key=f"{discoverer.package_id}.tar.gz")
+    assert isinstance(package_filepath, str)
+    with open(Path("tests", "fixtures", "json", f"{identifier}.json"), "r") as df:
+        expected_data = json.load(df)
+        assert package_data == expected_data
+    assert s3.head_object(Bucket=discoverer.assembly_bucket, Key=f"{discoverer.package_id}.tar.gz")
 
-    mock_refid.assert_has_calls([
-        call('/repositories/2/archival_objects/1150893'),
-        call('/repositories/2/archival_objects/1150893')
-    ])
+    mock_refid.assert_called_once_with('/repositories/2/archival_objects/1150893')
+
+
+@mock_aws
+@patch('src.discover_packages.PackageDiscoverer.get_as_ref_id')
+@patch('asnake.client.ASnakeClient.get')
+@patch('asnake.client.ASnakeClient.authorize')
+def test_unpack_aurora(mock_as, mock_get, mock_refid):
+    """Tests unpacking for aurora package."""
+    mock_as.return_value = True
+    mock_get.return_value.text = "v.4.2.0"
+    discoverer = PackageDiscoverer(*ARGS)
+    identifier = "f78742e5-6af9-4756-a94a-6cd297406d51"
+    discoverer.package_id = identifier
+    fixture_path = Path(
+        "tests",
+        "fixtures",
+        "bags",
+        f"{identifier}.tar.gz")
+    tmp_path = Path(discoverer.ebs_path, f"{discoverer.package_id}.tar.gz")
+    copy(fixture_path, tmp_path)
+    s3 = boto3.client('s3', region_name='us-east-1')
+    s3.create_bucket(Bucket=discoverer.assembly_bucket)
+
+    package_filepath, package_data = discoverer.unpack(tmp_path)
+
+    assert isinstance(package_filepath, str)
+    with open(Path("tests", "fixtures", "json", f"{identifier}.json"), "r") as df:
+        expected_data = json.load(df)
+        assert package_data == expected_data
+    assert s3.head_object(Bucket=discoverer.assembly_bucket, Key=f"{discoverer.package_id}.tar.gz")
+
+    mock_refid.assert_not_called()
 
 
 @mock_aws
