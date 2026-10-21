@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.6](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.1.5...v1.1.6) (2026-10-21)
+
+
+### Bug Fixes
+
+* update pip and deps ([d996db1](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/d996db164645c686663f547dde866b1ce7b5a5eb))
+* update pip and deps ([d996db1](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/d996db164645c686663f547dde866b1ce7b5a5eb))
+* update pip and deps ([f92ade2](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/f92ade277984245670768e6056ddf3478b4ba2ff))
+* update pip and deps ([f92ade2](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/f92ade277984245670768e6056ddf3478b4ba2ff))
+* update pip and deps ([858135f](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/858135fbd0c624dc20bab24e61aec57565c5993e))
+
 ## [1.1.5](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.1.4...v1.1.5) (2026-10-05)
 
 
