@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.8](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.1.7...v1.1.8) (2026-11-19)
+
+
+### Bug Fixes
+
+* deploy update ([987e9ef](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/987e9ef98b89ef2101f16e5e8eab6fd010f7aeaf))
+* update deploy ([4fbdfa5](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/4fbdfa5db334e6e525d6d80c2a488c941385020a))
+* update deploy ([44e8898](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/commit/44e8898bf62329b9dfddb0bff8184542ad12ce82))
+
 ## [1.1.7](https://github.com/RockefellerArchiveCenter/digital_ingest_discovery/compare/v1.1.6...v1.1.7) (2026-11-02)
 
 
